@@ -1,0 +1,35 @@
+{
+  "slug": "bankr-communities",
+  "title": "Bankr Communities",
+  "description": "Token-gated community discussions for Bankr-deployed tokens. Fee recipients create communities; holders post and react.",
+  "tags": ["community", "tokens", "social", "bankr"],
+  "permissions": [
+    "read:wallet",
+    "read:portfolio",
+    "read:appdata",
+    "write:appdata",
+    "fetch:http"
+  ],
+  "scripts": [
+    "syncTokens",
+    "verifyHolder",
+    "createPost",
+    "createCommunity",
+    "addReaction"
+  ],
+  "schedule": [
+    {
+      "script": "syncTokens",
+      "cron": "0 * * * *",
+      "enabled": true
+    }
+  ],
+  "publicDataKeys": [
+    "communities",
+    "token_launches",
+    "community_posts",
+    "meta.syncUpdatedAt"
+  ],
+  "frontendIdentity": "viewer",
+  "secrets": []
+}
