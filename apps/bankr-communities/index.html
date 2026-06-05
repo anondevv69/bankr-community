@@ -727,7 +727,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · v6
+    made with love &lt;3 rayblanco.eth · v7
   </footer>
 
   <div class="modal-overlay" id="createModal">
@@ -1143,8 +1143,18 @@
       }
 
       try {
-        const result = await bankr.scripts.run('verifyHolder', { tokenAddress });
+        const result = await bankr.scripts.run('verifyHolder', {
+          tokenAddress,
+          chain: currentCommunity.chain || 'base',
+        });
         holderStatus[tokenAddress] = result;
+
+        if (result.error) {
+          banner.innerHTML = `<div class="error">${escapeHtml(result.error)}</div>`;
+          postForm.style.display = 'none';
+          viewOnly.style.display = 'block';
+          return;
+        }
 
         if (result.holds) {
           banner.innerHTML = `<div class="holder-banner holding">✓ You hold ${result.balance.toLocaleString()} ${currentCommunity.symbol} — you can post and react</div>`;
