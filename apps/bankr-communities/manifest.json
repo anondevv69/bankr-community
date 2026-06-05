@@ -1,7 +1,7 @@
 {
   "slug": "bankr-communities",
   "title": "Bankr Communities",
-  "version": "5",
+  "version": "6",
   "description": "Token-gated community discussions for Bankr-deployed tokens. Anyone can start a community; token owners verify it.",
   "tags": ["community", "tokens", "social", "bankr"],
   "permissions": [

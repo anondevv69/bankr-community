@@ -727,7 +727,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · v5
+    made with love &lt;3 rayblanco.eth · v6
   </footer>
 
   <div class="modal-overlay" id="createModal">
@@ -777,29 +777,65 @@
       });
     }
 
-    async function loadData() {
+    async function safeGet(key) {
       try {
-        const [launchData, communityData, postsData, syncMeta, profilesData] = await Promise.all([
-          bankr.appKV.get('token_launches'),
-          bankr.appKV.get('communities'),
-          bankr.appKV.get('community_posts'),
-          bankr.appKV.get('meta.syncUpdatedAt'),
-          bankr.appKV.get('user_profiles'),
-        ]);
-        launches = launchData || [];
-        communities = communityData || [];
-        allPosts = postsData || {};
-        userProfiles = profilesData || {};
-
-        if (syncMeta) {
-          document.getElementById('syncMeta').textContent =
-            'Last synced: ' + formatTime(syncMeta);
-        }
-
-        renderCommunities();
-        renderCreateSearch();
+        return await bankr.appKV.get(key);
       } catch (err) {
-        console.error('Load error:', err);
+        console.warn('appKV.get failed for', key, err);
+        return null;
+      }
+    }
+
+    async function loadData() {
+      const [launchData, communityData, postsData, syncMeta, profilesData] = await Promise.all([
+        safeGet('token_launches'),
+        safeGet('communities'),
+        safeGet('community_posts'),
+        safeGet('meta.syncUpdatedAt'),
+        safeGet('user_profiles'),
+      ]);
+
+      launches = launchData || [];
+      communities = communityData || [];
+      allPosts = postsData || {};
+      userProfiles = profilesData || {};
+
+      if (syncMeta) {
+        document.getElementById('syncMeta').textContent =
+          'Last synced: ' + formatTime(syncMeta);
+      }
+
+      renderCommunities();
+      renderCreateSearch();
+    }
+
+    function updateWalletBar() {
+      const el = document.getElementById('walletDisplay');
+      if (!el) return;
+
+      if (typeof bankr === 'undefined') {
+        el.textContent = 'Bankr SDK not loaded — open inside Bankr terminal';
+        return;
+      }
+
+      isAuthenticated = bankr.auth?.isAuthenticated ?? false;
+      wallet = bankr.ctx?.walletAddress || bankr.wallet?.address || null;
+
+      el.innerHTML = wallet
+        ? 'Connected: <span class="addr">' + shortAddr(wallet) + '</span>'
+        : 'Browsing as guest — sign in to search and post';
+    }
+
+    async function boot() {
+      updateWalletBar();
+      try {
+        await loadData();
+      } catch (err) {
+        console.error('Boot error:', err);
+        document.getElementById('communitiesGrid').innerHTML =
+          '<div class="error">Could not load communities. Click Refresh in the app header or check publicDataKeys in manifest.</div>';
+        document.getElementById('createSearchResults').innerHTML =
+          '<p class="search-hint">Search above to find a Bankr-deployed token and start a community for it.</p>';
       }
     }
 
@@ -1279,20 +1315,26 @@
       } catch (_) {}
     }
 
-    bankr.on('ready', async () => {
-      isAuthenticated = bankr.auth.isAuthenticated;
-      wallet = bankr.ctx.walletAddress || bankr.wallet?.address || null;
+    if (typeof bankr !== 'undefined') {
+      bankr.on('ready', boot);
+      bankr.on('refresh', boot);
 
-      document.getElementById('walletDisplay').innerHTML = wallet
-        ? 'Connected: <span class="addr">' + shortAddr(wallet) + '</span>'
-        : 'Browsing as guest — sign in to search and post';
+      // Fallback if ready already fired before listener attached
+      setTimeout(() => {
+        if (document.getElementById('walletDisplay')?.textContent === 'Connecting...') {
+          boot();
+        }
+      }, 1500);
+    } else {
+      document.getElementById('walletDisplay').textContent =
+        'Bankr SDK not loaded — open inside Bankr terminal';
+      document.getElementById('communitiesGrid').innerHTML =
+        '<div class="error">This app must be opened from the Bankr terminal Apps panel.</div>';
+    }
 
-      await loadData();
-    });
-
-    bankr.on('refresh', loadData);
-
-    setInterval(loadData, 30000);
+    setInterval(() => {
+      if (typeof bankr !== 'undefined') loadData();
+    }, 30000);
   </script>
 </body>
 </html>
