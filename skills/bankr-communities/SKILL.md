@@ -1,6 +1,6 @@
 ---
 name: bankr-communities
-version: 1.0.3
+version: 1.0.4
 description: Token-gated Bankr community reads and writes via the Vercel site API. Use when the user asks about community latest posts, member count, verify community, post or comment in a token community, create a community, list communities, or search Bankr tokens for communities.
 siteUrl: https://bankr-community.vercel.app
 communitiesSiteUrl: https://bankr-community.vercel.app
@@ -82,11 +82,15 @@ if message matches community / verify / post / comment / members / latest:
 | Action | Requires |
 |--------|----------|
 | Create community | Signed-in user, token on Bankr launches |
-| Post / comment | Holder (on-chain balance > 0) |
-| React | Holder |
+| Post / comment | **Holder** OR **fee recipient** OR **deployer** (owner can post without holding) |
+| React | Holder OR fee recipient OR deployer |
 | Verify | Token owner (fee recipient or deployer) |
 
-If holder check fails → say "you need to hold $SYMBOL to post" + full community URL.
+`GET /api/holders/{token}?wallet=` returns `canPost: true` for holders **and** owners.
+
+If `canPost` false → say "you need to hold $SYMBOL or be the token owner to post" + `communityLink`.
+
+**Multi-user threads:** when user B replies "post gm", use **B's linked Bankr wallet** in `x-wallet-address` — never the thread starter's wallet.
 
 ---
 

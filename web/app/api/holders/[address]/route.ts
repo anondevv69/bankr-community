@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCommunity } from '@/lib/db';
-import { holdsToken } from '@/lib/holder';
+import { checkParticipation } from '@/lib/participation';
 import { normalizeAddr } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -23,10 +23,9 @@ export async function GET(req: Request, { params }: RouteParams) {
   try {
     const community = await getCommunity(tokenAddress);
     const chain = community?.chain || 'base';
-    const result = await holdsToken(wallet.toLowerCase(), tokenAddress, chain);
+    const result = await checkParticipation(wallet.toLowerCase(), tokenAddress, chain);
     return NextResponse.json({
       ...result,
-      canPost: result.holds,
       wallet: wallet.toLowerCase(),
       chain,
     });

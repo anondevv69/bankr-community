@@ -5,7 +5,7 @@ import {
   setPostsForToken,
   updateCommunityCounts,
 } from '@/lib/db';
-import { holdsToken } from '@/lib/holder';
+import { checkParticipation } from '@/lib/participation';
 import { resolveAuthorProfile } from '@/lib/profiles';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
@@ -40,14 +40,17 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Community not found' }, { status: 404 });
     }
 
-    const { holds, balance } = await holdsToken(
+    const participation = await checkParticipation(
       wallet,
       tokenAddress,
       community.chain || 'base'
     );
-    if (!holds) {
+    if (!participation.canPost) {
       return NextResponse.json(
-        { error: 'You must hold at least 1 token to post' },
+        {
+          error:
+            'You must hold the token or be the fee recipient / deployer to post',
+        },
         { status: 403 }
       );
     }
@@ -61,7 +64,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       content,
       reactions: { '👍': [], '❤️': [], '🔥': [] },
       timestamp: Date.now(),
-      balance,
+      balance: participation.balance,
     };
 
     const posts = await getPosts(tokenAddress);

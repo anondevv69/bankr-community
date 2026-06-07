@@ -27,7 +27,7 @@
 |-----------|------|
 | **start** / **create** community for **$TMP** | search → `POST /api/communities/{token}` `{ description? }` + header `x-wallet-address: {linked}` |
 | **verify** **$TMP** community | briefing → owner check → `POST /api/communities/{token}/verify` |
-| **post** in **TMP** community: {text} | `GET /api/holders/{token}?wallet={linked}` → if holds → `POST …/posts` `{ content }` |
+| **post** in **TMP** community: {text} | `GET /api/holders/{token}?wallet={linked}` → if `canPost` → `POST …/posts` `{ content }` |
 | **comment** in **0x935e…** community: {text} | same as post |
 | react **👍** on post **{id}** in **TMP** | `POST /api/posts/{id}/react` `{ tokenAddress, reaction: "👍" }` |
 

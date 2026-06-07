@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPosts, setPostsForToken, getCommunity } from '@/lib/db';
-import { holdsToken } from '@/lib/holder';
+import { checkParticipation } from '@/lib/participation';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 
 const ALLOWED = ['👍', '❤️', '🔥'];
@@ -26,13 +26,16 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   try {
     const community = await getCommunity(tokenAddress);
-    const { holds } = await holdsToken(
+    const participation = await checkParticipation(
       wallet,
       tokenAddress,
       community?.chain || 'base'
     );
-    if (!holds) {
-      return NextResponse.json({ error: 'You must hold the token to react' }, { status: 403 });
+    if (!participation.canPost) {
+      return NextResponse.json(
+        { error: 'You must hold the token or be the fee recipient / deployer to react' },
+        { status: 403 }
+      );
     }
 
     const posts = await getPosts(tokenAddress);

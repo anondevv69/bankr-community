@@ -15,7 +15,12 @@ export default function CommunityPage({ params }: { params: { address: string } 
   const { connectWallet } = useConnectWallet();
   const [community, setCommunity] = useState<Community | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [holder, setHolder] = useState<{ holds: boolean; balance: number } | null>(null);
+  const [holder, setHolder] = useState<{
+    holds: boolean;
+    balance: number;
+    canPost: boolean;
+    isOwner: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -42,9 +47,14 @@ export default function CommunityPage({ params }: { params: { address: string } 
       const data = await fetch(
         `/api/holders/${tokenAddress}?wallet=${address}`
       ).then((r) => r.json());
-      setHolder({ holds: data.holds, balance: data.balance });
+      setHolder({
+        holds: data.holds,
+        balance: data.balance,
+        canPost: data.canPost,
+        isOwner: data.isOwner,
+      });
     } catch {
-      setHolder({ holds: false, balance: 0 });
+      setHolder({ holds: false, balance: 0, canPost: false, isOwner: false });
     }
   }, [address, tokenAddress]);
 
@@ -92,7 +102,7 @@ export default function CommunityPage({ params }: { params: { address: string } 
     );
   }
 
-  const canPost = isConnected && holder?.holds;
+  const canPost = isConnected && !!holder?.canPost;
   const isOwner =
     address &&
     (address.toLowerCase() === community.ownerWallet?.toLowerCase() ||
@@ -142,9 +152,11 @@ export default function CommunityPage({ params }: { params: { address: string } 
           <div className="mt-4 p-3 bg-surface-2 border border-border rounded-lg text-sm text-muted">
             Connect wallet to check holder status and post.
           </div>
-        ) : holder?.holds ? (
+        ) : holder?.canPost ? (
           <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400">
-            ✓ You hold {holder.balance.toLocaleString()} {community.symbol} — you can post and react
+            {holder.holds
+              ? `✓ You hold ${holder.balance.toLocaleString()} ${community.symbol} — you can post and react`
+              : `✓ You are the token owner — you can post and react without holding`}
           </div>
         ) : (
           <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400">

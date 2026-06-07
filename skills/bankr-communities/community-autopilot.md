@@ -47,7 +47,7 @@
 |------|--------|
 | 1 | Resolve community token address |
 | 2 | `GET {SITE}/api/holders/{token}?wallet={linked}` |
-| 3 | If `!holds` → "You need to hold $SYMBOL to post" + link — **STOP** |
+| 3 | If `!canPost` → explain holder OR owner required + `communityLink` — **STOP** |
 | 4 | `POST {SITE}/api/communities/{token}/posts` `{ "content": "…" }` header `x-wallet-address: {linked}` |
 | 5 | Confirm post + paste `links.communityPage` URL on its own line — **STOP** |
 
