@@ -2,8 +2,6 @@ import type { SocialLinks } from './types';
 
 export type NormalizedSocialLinks = {
   x: string | null;
-  wallet: string | null;
-  walletUrl: string | null;
   github: string | null;
   telegram: string | null;
   discord: string | null;
@@ -19,13 +17,6 @@ export function normalizeX(value: string): string | null {
   if (/^https?:\/\//i.test(raw)) return raw;
   const handle = raw.replace(/^@/, '');
   return `https://x.com/${handle}`;
-}
-
-export function normalizeWallet(value: string): string | null {
-  const raw = trim(value);
-  if (!raw) return null;
-  if (!/^0x[a-fA-F0-9]{40}$/.test(raw)) return null;
-  return raw.toLowerCase();
 }
 
 export function walletExplorerUrl(address: string, chain = 'base'): string {
@@ -57,43 +48,37 @@ export function normalizeDiscord(value: string): string | null {
   return `https://discord.gg/${invite}`;
 }
 
+/** Editable social links only — beneficiary wallet comes from Bankr launch data */
 export function normalizeSocialLinks(input: Partial<SocialLinks>): SocialLinks {
   return {
     x: normalizeX(input.x || '') || undefined,
-    wallet: normalizeWallet(input.wallet || '') || undefined,
     github: normalizeGithub(input.github || '') || undefined,
     telegram: normalizeTelegram(input.telegram || '') || undefined,
     discord: normalizeDiscord(input.discord || '') || undefined,
   };
 }
 
-export function socialLinksForDisplay(
-  links?: SocialLinks | null,
-  chain = 'base'
-): NormalizedSocialLinks {
+export function socialLinksForDisplay(links?: SocialLinks | null): NormalizedSocialLinks {
   const source = links || {};
-  const wallet = source.wallet ? normalizeWallet(source.wallet) : null;
   return {
     x: source.x ? normalizeX(source.x) : null,
-    wallet,
-    walletUrl: wallet ? walletExplorerUrl(wallet, chain) : null,
     github: source.github ? normalizeGithub(source.github) : null,
     telegram: source.telegram ? normalizeTelegram(source.telegram) : null,
     discord: source.discord ? normalizeDiscord(source.discord) : null,
   };
 }
 
-export function hasSocialLinks(links?: SocialLinks | null, chain = 'base'): boolean {
-  const display = socialLinksForDisplay(links, chain);
-  return !!(
-    display.x ||
-    display.wallet ||
-    display.github ||
-    display.telegram ||
-    display.discord
-  );
+export function hasSocialLinks(links?: SocialLinks | null): boolean {
+  const display = socialLinksForDisplay(links);
+  return !!(display.x || display.github || display.telegram || display.discord);
 }
 
 export function shortWallet(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+export function beneficiaryXUrl(username: string | null | undefined): string | null {
+  if (!username) return null;
+  const handle = username.replace(/^@/, '');
+  return handle ? `https://x.com/${handle}` : null;
 }

@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import type { Community, SocialLinks } from '@/lib/types';
-import {
-  hasSocialLinks,
-  shortWallet,
-  socialLinksForDisplay,
-} from '@/lib/social-links';
+import type { BeneficiaryInfo, Community, SocialLinks } from '@/lib/types';
+import { hasSocialLinks, socialLinksForDisplay } from '@/lib/social-links';
+import { BeneficiaryCard } from '@/components/BeneficiaryCard';
 import { apiFetch } from '@/lib/wagmi';
 
 const SOCIAL_FIELDS: Array<{ key: keyof SocialLinks; label: string; placeholder: string }> = [
@@ -16,11 +13,6 @@ const SOCIAL_FIELDS: Array<{ key: keyof SocialLinks; label: string; placeholder:
     label: 'Token X account',
     placeholder: 'https://x.com/TokenAccount or @TokenAccount',
   },
-  {
-    key: 'wallet',
-    label: 'Beneficiary wallet',
-    placeholder: '0x374d91a5674fa7cf86e725093b5848b97e1e13b4',
-  },
   { key: 'github', label: 'GitHub', placeholder: 'username or https://github.com/...' },
   { key: 'telegram', label: 'Telegram', placeholder: 'handle or https://t.me/...' },
   { key: 'discord', label: 'Discord', placeholder: 'invite code or https://discord.gg/...' },
@@ -28,10 +20,12 @@ const SOCIAL_FIELDS: Array<{ key: keyof SocialLinks; label: string; placeholder:
 
 export function CommunityProfile({
   community,
+  beneficiary,
   canManage,
   onUpdated,
 }: {
   community: Community;
+  beneficiary: BeneficiaryInfo | null;
   canManage: boolean;
   onUpdated: () => void;
 }) {
@@ -41,7 +35,7 @@ export function CommunityProfile({
   const [description, setDescription] = useState(community.description);
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(community.socialLinks || {});
 
-  const displayLinks = socialLinksForDisplay(community.socialLinks, community.chain);
+  const displayLinks = socialLinksForDisplay(community.socialLinks);
 
   useEffect(() => {
     setDescription(community.description);
@@ -71,12 +65,6 @@ export function CommunityProfile({
 
   function copyContract() {
     navigator.clipboard.writeText(community.tokenAddress);
-  }
-
-  function copyWallet() {
-    if (displayLinks.wallet) {
-      navigator.clipboard.writeText(displayLinks.wallet);
-    }
   }
 
   return (
@@ -116,8 +104,8 @@ export function CommunityProfile({
       {editing ? (
         <div className="mt-5 space-y-4">
           <p className="text-xs text-muted">
-            Token socials are separate from any admin personal accounts. Only the fee beneficiary
-            can edit this profile.
+            Token socials are separate from the Bankr beneficiary account. Beneficiary wallet
+            is pulled automatically from Bankr.
           </p>
           <div>
             <label className="block text-sm text-muted mb-2">Description</label>
@@ -157,7 +145,7 @@ export function CommunityProfile({
       ) : (
         <>
           <p className="text-muted text-sm mt-4 whitespace-pre-wrap">{community.description}</p>
-          {hasSocialLinks(community.socialLinks, community.chain) ? (
+          {hasSocialLinks(community.socialLinks) ? (
             <div className="flex flex-wrap gap-2 mt-4">
               {displayLinks.x ? (
                 <a
@@ -167,16 +155,6 @@ export function CommunityProfile({
                   className="px-3 py-1.5 text-xs border border-border rounded-lg hover:border-accent"
                 >
                   Token X
-                </a>
-              ) : null}
-              {displayLinks.wallet && displayLinks.walletUrl ? (
-                <a
-                  href={displayLinks.walletUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 text-xs border border-border rounded-lg hover:border-accent font-mono"
-                >
-                  Wallet {shortWallet(displayLinks.wallet)}
                 </a>
               ) : null}
               {displayLinks.github ? (
@@ -209,18 +187,12 @@ export function CommunityProfile({
                   Discord
                 </a>
               ) : null}
-              {displayLinks.wallet ? (
-                <button
-                  onClick={copyWallet}
-                  className="px-3 py-1.5 text-xs border border-border rounded-lg hover:border-accent"
-                >
-                  Copy wallet
-                </button>
-              ) : null}
             </div>
           ) : null}
         </>
       )}
+
+      <BeneficiaryCard beneficiary={beneficiary} />
 
       <div className="mt-4">
         {community.verified ? (

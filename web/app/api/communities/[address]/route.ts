@@ -14,7 +14,8 @@ import {
   getLaunchOwnerWallets,
 } from '@/lib/bankr-api';
 import { isTokenBeneficiary, canEditCommunityProfile } from '@/lib/community-owner';
-import { mergeCommunityDefaults, normalizePinnedPosts, sortPostsWithPinned } from '@/lib/community-posts';
+import { getBeneficiaryInfo } from '@/lib/beneficiary';
+import { mergeCommunityDefaults, sortPostsWithPinned } from '@/lib/community-posts';
 import { normalizeSocialLinks } from '@/lib/social-links';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
@@ -36,9 +37,12 @@ export async function GET(_req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Community not found' }, { status: 404 });
     }
     const normalized = mergeCommunityDefaults(community);
+    const beneficiary = await getBeneficiaryInfo(tokenAddress, normalized.chain);
+
     return NextResponse.json({
       community: normalized,
       posts: sortPostsWithPinned(posts, normalized.pinnedPosts || []),
+      beneficiary,
     });
   } catch (err) {
     console.error('GET community', err);

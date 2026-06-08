@@ -6,13 +6,18 @@ export interface Author {
 }
 
 export interface SocialLinks {
-  /** Token/community X account — separate from any admin personal account */
+  /** Token/community X account — separate from beneficiary personal X on Bankr */
   x?: string;
-  /** Beneficiary or community wallet shown on profile */
-  wallet?: string;
   github?: string;
   telegram?: string;
   discord?: string;
+}
+
+export interface BeneficiaryInfo {
+  wallet: string;
+  xUsername: string | null;
+  xUrl: string | null;
+  walletUrl: string;
 }
 
 export interface PinnedPost {

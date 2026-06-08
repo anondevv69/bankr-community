@@ -7,7 +7,7 @@ import { useConnectWallet } from '@/components/WalletButton';
 import { Footer } from '@/components/Header';
 import { CommunityProfile } from '@/components/CommunityProfile';
 import { PostFeed, PostForm } from '@/components/PostFeed';
-import type { Community, Post } from '@/lib/types';
+import type { BeneficiaryInfo, Community, Post } from '@/lib/types';
 import { apiFetch } from '@/lib/wagmi';
 
 export default function CommunityPage({ params }: { params: { address: string } }) {
@@ -15,6 +15,7 @@ export default function CommunityPage({ params }: { params: { address: string } 
   const { address, isConnected } = useAccount();
   const { connectWallet } = useConnectWallet();
   const [community, setCommunity] = useState<Community | null>(null);
+  const [beneficiary, setBeneficiary] = useState<BeneficiaryInfo | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [holder, setHolder] = useState<{
     holds: boolean;
@@ -34,6 +35,7 @@ export default function CommunityPage({ params }: { params: { address: string } 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setCommunity(data.community);
+      setBeneficiary(data.beneficiary || null);
       setPosts(data.posts || []);
     } catch {
       setCommunity(null);
@@ -122,7 +124,12 @@ export default function CommunityPage({ params }: { params: { address: string } 
         ← Back to communities
       </Link>
 
-      <CommunityProfile community={community} canManage={canEditProfile} onUpdated={load} />
+      <CommunityProfile
+        community={community}
+        beneficiary={beneficiary}
+        canManage={canEditProfile}
+        onUpdated={load}
+      />
 
       {!community.verified && canVerify ? (
         <button
