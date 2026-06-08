@@ -39,11 +39,23 @@ Returns: `community`, `stats`, `recentPosts`, `opportunities`, `links`, `agentAc
 ## Communities
 
 ```
-GET  /api/communities
-GET  /api/communities/{tokenAddress}
-POST /api/communities/{tokenAddress}     body: { description? }
-POST /api/communities/{tokenAddress}/verify
-POST /api/communities/{tokenAddress}/posts   body: { content }
+GET   /api/communities
+GET   /api/communities/{tokenAddress}
+PATCH /api/communities/{tokenAddress}     body: { description?, socialLinks? }  ← fee beneficiary
+POST  /api/communities/{tokenAddress}     body: { description? }
+POST  /api/communities/{tokenAddress}/verify
+POST  /api/communities/{tokenAddress}/posts   body: { content }  → returns postId
+POST  /api/communities/{tokenAddress}/pin-post  body: { postId, action: "pin"|"unpin" }
+```
+
+**PATCH socialLinks fields:** `x`, `website`, `github`, `telegram`, `discord` (beneficiary wallet is read-only from Bankr).
+
+**pin-post:** verified fee beneficiary only. Multiple pins allowed; most recent pin shows first.
+
+**holders check before writes:**
+```
+GET /api/holders/{tokenAddress}?wallet=0x…
+→ canPost, canEditProfile, canPinPosts, isBeneficiary
 ```
 
 ---

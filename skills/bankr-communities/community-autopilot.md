@@ -73,6 +73,40 @@
 
 ---
 
+## Flow G — Update profile / social links (beneficiary only)
+
+| Step | Action |
+|------|--------|
+| 1 | `GET /api/holders/{token}?wallet={linked}` → if `!canEditProfile` → **STOP** |
+| 2 | `GET /api/communities/{token}` → current `description` + `socialLinks` |
+| 3 | Merge user fields → `PATCH /api/communities/{token}` `{ description?, socialLinks? }` |
+| 4 | Confirm changes + `communityLink` — **STOP** |
+
+Full examples: **`BENEFICIARY-ACTIONS.md`**
+
+---
+
+## Flow H — Pin / unpin post (verified beneficiary only)
+
+| Step | Action |
+|------|--------|
+| 1 | `GET /api/holders/{token}?wallet={linked}` → if `!canPinPosts` → **STOP** |
+| 2 | Resolve `postId` from message or latest post |
+| 3 | `POST /api/communities/{token}/pin-post` `{ postId, action: "pin"|"unpin" }` |
+| 4 | Confirm + `communityLink` — **STOP** |
+
+---
+
+## Flow I — Post then pin (combined)
+
+| Step | Action |
+|------|--------|
+| 1 | Flow D steps 1–4 (post) → save `postId` |
+| 2 | If user said pin/pin it → Flow H on that `postId` if `canPinPosts` |
+| 3 | Reply with post confirmation + pinned note + URL — **STOP** |
+
+---
+
 ## Self-check
 
 1. Did you call briefing API before answering "latest"? → **YES**

@@ -1,9 +1,8 @@
 ---
 name: bankr-communities
-version: 1.3.1
+version: 1.4.0
 description: >-
-  Briefing/latest: paste replyText verbatim — last line is community URL. TMP: https://bankr-community.vercel.app/community/0x935e13a28849095db45e63040f109c34b757aba3
-  Never summarize briefing without communityLink. Link-only: GET /api/agent/link?q=TICKER.
+  Verify, post, pin, update profile via API like post-in-community. Beneficiary: PATCH socials, pin-post. Read BENEFICIARY-ACTIONS.md. TMP: https://bankr-community.vercel.app/community/0x935e13a28849095db45e63040f109c34b757aba3
 siteUrl: https://bankr-community.vercel.app
 communitiesSiteUrl: https://bankr-community.vercel.app
 COMMUNITIES_SITE_URL: https://bankr-community.vercel.app
@@ -19,6 +18,21 @@ metadata:
 ---
 
 # Bankr Communities — Agent skill
+
+## ⚡ WRITE ACTIONS — verify, post, pin, profile (same as post-in-community)
+
+User says **verify**, **post**, **pin**, **add links**, **update profile** → read **`BENEFICIARY-ACTIONS.md`** → use linked wallet → call API → reply + community URL.
+
+| User says | Agent does |
+|-----------|------------|
+| **verify** the **TMP** community | `POST …/verify` (fee beneficiary wallet) |
+| **add website** / **update profile** for **TMP** | `PATCH …/communities/{token}` `{ socialLinks, description }` |
+| **post** in **TMP**: text **and pin it** | `POST …/posts` → `POST …/pin-post` if verified beneficiary |
+| **pin** latest post in **TMP** | `POST …/pin-post` `{ postId, action: "pin" }` |
+
+Check permissions: `GET /api/holders/{token}?wallet={linked}` → `canEditProfile`, `canPinPosts`, `canPost`.
+
+---
 
 ## ⚡ LINK QUESTIONS — instant reply (no tools needed)
 
@@ -89,8 +103,11 @@ Users say natural language on **tweet** or **terminal**. Bankr must **`use_skill
 | what's the latest on **$TMP** community? | `GET {SITE}/api/agent/briefing?symbol=TMP` → paste **`replyText` verbatim** (URL is **last line**) — or `?format=text` |
 | how many members in **TMP** community? | briefing → `stats.memberCount` |
 | show recent posts in **0x935e…** community | `GET {SITE}/api/communities/0x935e…` |
-| **verify** the **TMP** community | linked wallet = owner? → `POST …/verify` |
-| **post** in **TMP** community: hello holders | holder check → `POST …/posts` → paste `replyText` from response |
+| **verify** the **TMP** community | `BENEFICIARY-ACTIONS.md` → `POST …/verify` |
+| **add links** / **update profile** for **TMP** | `PATCH …/communities/{token}` (beneficiary) |
+| **post** in **TMP** community: hello **and pin it** | post → pin-post if `canPinPosts` |
+| **pin** post in **TMP** community | `POST …/pin-post` |
+| **post** in **TMP** community: hello holders | holder check → `POST …/posts` → paste `replyText` |
 | **comment** on **$CTO** community | same as post |
 | start a community for **$PEPE** | search token → `POST …/communities/{addr}` |
 | list all communities | `GET {SITE}/api/communities` |
@@ -111,12 +128,12 @@ if message contains "link" OR "url" OR "where is" + community/token:
   3. If TMP or ARCHIVE → paste URL from table → STOP (no tools, no HTTP)
   4. Else try GET /api/agent/link?q={TICKER} → paste body
   5. If HTTP fails → known-communities.json → NEVER empty / "couldn't generate"
-else if community intent (members, post, verify, latest):
+else if community intent (verify, post, pin, profile, update links, members, latest):
   1. use_skill("bankr-communities")
-  2. Read ONE-LINE-INTENTS.md
-  3. GET /api/agent/briefing or specific API — BEFORE replying
-  4. For writes: inject linked wallet → x-wallet-address header
-  5. Plain English reply with site link — no API jargon
+  2. Read BENEFICIARY-ACTIONS.md (writes) or ONE-LINE-INTENTS.md (reads)
+  3. GET /api/holders/{token}?wallet={linked} before writes
+  4. Call API — BEFORE replying
+  5. Plain English reply + communityLink on own line
 ```
 
 **Tweet = DM** — same pipeline. Load skill on `@bankrbot` intake **before** tool selection.
@@ -201,7 +218,8 @@ TMP marketplace ops → TMP skills. Community social layer → **this skill**.
 
 | File | Purpose |
 |------|---------|
-| `INSTANT-LINK-REPLIES.md` | **Link questions — paste URL, no HTTP (read first)** |
+| `BENEFICIARY-ACTIONS.md` | **Verify, profile, pin, post+pin — tweet + terminal** |
+| `INSTANT-LINK-REPLIES.md` | Link questions — paste URL, no HTTP (read first for links) |
 | `GET-LINK.md` | GET /api/agent/link for unknown tickers |
 | `LINK-INTENT-ONLY.md` | Pointer to GET-LINK.md |
 | `ONE-LINE-INTENTS.md` | Full intent table |

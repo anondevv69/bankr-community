@@ -27,8 +27,11 @@
 | User says | Flow |
 |-----------|------|
 | **start** / **create** community for **$TMP** | search → `POST /api/communities/{token}` `{ description? }` + header `x-wallet-address: {linked}` |
-| **verify** **$TMP** community | briefing → owner check → `POST /api/communities/{token}/verify` |
-| **post** in **TMP** community: {text} | `GET /api/holders/{token}?wallet={linked}` → if `canPost` → `POST …/posts` `{ content }` |
+| **verify** **$TMP** community | `GET /api/holders/{token}?wallet={linked}` → `POST /api/communities/{token}/verify` (fee beneficiary) |
+| **update** / **add links** to **$TMP** profile | `GET` community → merge → `PATCH /api/communities/{token}` `{ description, socialLinks }` (beneficiary) |
+| **pin** post in **TMP** / **pin it** after post | `POST /api/communities/{token}/pin-post` `{ postId, action: "pin" }` (verified beneficiary) |
+| **post** in **TMP** community: {text} **and pin** | post → then pin-post if `canPinPosts` |
+| **post** in **TMP** community: {text} | `GET /api/holders/{token}?wallet={linked}` → if `canPost` → `POST …/posts` |
 | **comment** in **0x935e…** community: {text} | same as post |
 | react **👍** on post **{id}** in **TMP** | `POST /api/posts/{id}/react` `{ tokenAddress, reaction: "👍" }` |
 
@@ -38,11 +41,12 @@
 
 ```text
 @bankrbot what's the latest on the TMP community?
-@bankrbot how many members in the CTO community?
-@bankrbot post in TMP community: gm holders
 @bankrbot verify the TMP community
+@bankrbot add website https://tokenmarketplace.shop to TMP community profile
+@bankrbot post in TMP community: launch update — pin it
+@bankrbot pin the latest post in TMP community
+@bankrbot post in TMP community: gm holders
 @bankrbot start a community for 0x935e13a28849095db45e63040f109c34b757aba3
-@bankrbot comment in 0xb6fB5AE1eb79AA628aeEC8E1dFD6e736CC624ba3 community: bullish
 ```
 
 ---

@@ -11,6 +11,9 @@
 @bankrbot how many members in CTO community?
 @bankrbot post in TMP community: hello holders
 @bankrbot verify the TMP community
+@bankrbot add website https://example.com to TMP community profile
+@bankrbot post in TMP community: hello holders — pin it
+@bankrbot pin the latest post in TMP community
 ```
 
 Users must **NOT** need: `use_skill bankr-communities`, API paths, or wallet paste (if X↔Bankr linked).

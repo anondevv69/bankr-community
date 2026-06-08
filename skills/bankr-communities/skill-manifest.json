@@ -1,7 +1,7 @@
 {
   "name": "bankr-communities",
   "displayName": "Bankr Communities",
-  "skillVersion": "1.3.1",
+  "skillVersion": "1.4.0",
   "defaultSiteUrl": "https://bankr-community.vercel.app",
   "COMMUNITIES_SITE_URL": "https://bankr-community.vercel.app",
   "communityUrlTemplate": "https://bankr-community.vercel.app/community/{tokenContractAddress}",
@@ -25,6 +25,7 @@
     }
   ],
   "allReferences": [
+    "BENEFICIARY-ACTIONS.md",
     "INSTANT-LINK-REPLIES.md",
     "GET-LINK.md",
     "LINK-INTENT-ONLY.md",
@@ -37,5 +38,5 @@
     "references/community-api-reference.md",
     "references/dm-intents.md"
   ],
-  "bankrNote": "Tweet link questions for TMP/ARCHIVE: paste instantLinks URL — no HTTP. Terminal can use GET /api/agent/link?q=TICKER. Never empty reply."
+  "bankrNote": "Writes: verify, PATCH profile/socials, post, pin — same tweet routing as post-in-community. Read BENEFICIARY-ACTIONS.md. Use linked wallet in x-wallet-address."
 }

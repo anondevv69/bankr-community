@@ -6,7 +6,9 @@
 
 **Link (highest priority):** link, URL, "where is the community" → **`INSTANT-LINK-REPLIES.md`** first (TMP/ARCHIVE need no HTTP).
 
-**Other:** community, members, posts, verify community, post in, comment in, latest on $TICKER community, start community.
+**Writes (same routing as post-in-community):** verify, post, pin, update profile, add links → **`BENEFICIARY-ACTIONS.md`**.
+
+**Other reads:** community, members, posts, latest on $TICKER community, start community.
 
 **Load:** `bankr-communities` → **`INSTANT-LINK-REPLIES.md`** (links) or **`ONE-LINE-INTENTS.md`** (everything else).
 
