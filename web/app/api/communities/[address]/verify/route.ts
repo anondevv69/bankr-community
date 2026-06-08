@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCommunity, getCommunities, getLaunches, setCommunities } from '@/lib/db';
-import { fetchLaunchByAddress, isLaunchOwner } from '@/lib/bankr-api';
+import { fetchLaunchByAddress } from '@/lib/bankr-api';
+import { isTokenBeneficiary } from '@/lib/community-owner';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
 
@@ -28,9 +29,9 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Token not found in Bankr launches' }, { status: 400 });
     }
 
-    if (!isLaunchOwner(launch, wallet)) {
+    if (!(await isTokenBeneficiary(wallet, tokenAddress))) {
       return NextResponse.json(
-        { error: 'Only the token owner (fee recipient or deployer) can verify this community' },
+        { error: 'Only the token fee beneficiary can verify this community' },
         { status: 403 }
       );
     }

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useConnectWallet } from '@/components/WalletButton';
-import { Header, Footer } from '@/components/Header';
+import { Footer } from '@/components/Header';
+import { CommunityProfile } from '@/components/CommunityProfile';
 import { PostFeed, PostForm } from '@/components/PostFeed';
 import type { Community, Post } from '@/lib/types';
 import { apiFetch } from '@/lib/wagmi';
@@ -20,6 +21,9 @@ export default function CommunityPage({ params }: { params: { address: string } 
     balance: number;
     canPost: boolean;
     isOwner: boolean;
+    isBeneficiary: boolean;
+    canEditProfile: boolean;
+    canPinPosts: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,9 +56,20 @@ export default function CommunityPage({ params }: { params: { address: string } 
         balance: data.balance,
         canPost: data.canPost,
         isOwner: data.isOwner,
+        isBeneficiary: data.isBeneficiary,
+        canEditProfile: data.canEditProfile,
+        canPinPosts: data.canPinPosts,
       });
     } catch {
-      setHolder({ holds: false, balance: 0, canPost: false, isOwner: false });
+      setHolder({
+        holds: false,
+        balance: 0,
+        canPost: false,
+        isOwner: false,
+        isBeneficiary: false,
+        canEditProfile: false,
+        canPinPosts: false,
+      });
     }
   }, [address, tokenAddress]);
 
@@ -79,12 +94,6 @@ export default function CommunityPage({ params }: { params: { address: string } 
     }
   }
 
-  function copyContract() {
-    if (community?.tokenAddress) {
-      navigator.clipboard.writeText(community.tokenAddress);
-    }
-  }
-
   if (loading) {
     return (
       <div className="max-w-[1100px] mx-auto px-5 py-12 text-muted">Loading community…</div>
@@ -103,10 +112,9 @@ export default function CommunityPage({ params }: { params: { address: string } 
   }
 
   const canPost = isConnected && !!holder?.canPost;
-  const isOwner =
-    address &&
-    (address.toLowerCase() === community.ownerWallet?.toLowerCase() ||
-      address.toLowerCase() === community.founderWallet?.toLowerCase());
+  const canEditProfile = isConnected && !!holder?.canEditProfile;
+  const canPinPosts = isConnected && !!holder?.canPinPosts;
+  const canVerify = isConnected && !!holder?.isBeneficiary;
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 pb-16">
@@ -114,56 +122,32 @@ export default function CommunityPage({ params }: { params: { address: string } 
         ← Back to communities
       </Link>
 
-      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
-        <div className="text-3xl font-bold text-accent-hover">{community.symbol}</div>
-        <div className="text-xl font-semibold mt-1">{community.name}</div>
-        <div className="flex flex-wrap items-center gap-2 mt-4 text-sm">
-          <span className="text-muted">Contract</span>
-          <code className="font-mono text-accent-hover">{community.tokenAddress}</code>
-          <button
-            onClick={copyContract}
-            className="px-3 py-1 text-xs border border-border rounded-lg hover:border-accent"
-          >
-            Copy
-          </button>
-        </div>
-        <p className="text-muted text-sm mt-4">{community.description}</p>
-        {community.verified ? (
-          <span className="inline-block mt-4 text-[11px] font-semibold px-2 py-1 rounded-full bg-green-500/10 text-green-500">
-            ✓ Verified by token owner
-          </span>
-        ) : (
-          <>
-            <span className="inline-block mt-4 text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-500/15 text-amber-500">
-              Unverified — awaiting token owner
-            </span>
-            {isOwner && isConnected ? (
-              <button
-                onClick={verifyCommunity}
-                className="block mt-3 px-4 py-2 text-sm bg-accent text-white rounded-lg"
-              >
-                Verify Community
-              </button>
-            ) : null}
-          </>
-        )}
+      <CommunityProfile community={community} canManage={canEditProfile} onUpdated={load} />
 
-        {!isConnected ? (
-          <div className="mt-4 p-3 bg-surface-2 border border-border rounded-lg text-sm text-muted">
-            Connect wallet to check holder status and post.
-          </div>
-        ) : holder?.canPost ? (
-          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400">
-            {holder.holds
-              ? `✓ You hold ${holder.balance.toLocaleString()} ${community.symbol} — you can post and react`
-              : `✓ You are the token owner — you can post and react without holding`}
-          </div>
-        ) : (
-          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400">
-            You do not hold this token yet. Viewing only.
-          </div>
-        )}
-      </div>
+      {!community.verified && canVerify ? (
+        <button
+          onClick={verifyCommunity}
+          className="mb-6 px-4 py-2 text-sm bg-accent text-white rounded-lg"
+        >
+          Verify Community
+        </button>
+      ) : null}
+
+      {!isConnected ? (
+        <div className="mb-6 p-3 bg-surface-2 border border-border rounded-lg text-sm text-muted">
+          Connect wallet to check holder status and post.
+        </div>
+      ) : holder?.canPost ? (
+        <div className="mb-6 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400">
+          {holder.holds
+            ? `✓ You hold ${holder.balance.toLocaleString()} ${community.symbol} — you can post and react`
+            : `✓ You are the token owner — you can post and react without holding`}
+        </div>
+      ) : (
+        <div className="mb-6 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400">
+          You do not hold this token yet. Viewing only.
+        </div>
+      )}
 
       {canPost ? (
         <PostForm tokenAddress={tokenAddress} onPosted={load} />
@@ -177,6 +161,8 @@ export default function CommunityPage({ params }: { params: { address: string } 
         tokenAddress={tokenAddress}
         posts={posts}
         canInteract={!!canPost}
+        canManage={canPinPosts}
+        pinnedPosts={community.pinnedPosts}
         onUpdate={load}
       />
       <Footer />

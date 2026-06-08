@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
-import type { Post } from '@/lib/types';
+import type { PinnedPost, Post } from '@/lib/types';
+import { isPostPinned } from '@/lib/community-posts';
 import { formatTime } from '@/lib/utils';
 import { AuthorBlock } from './AuthorBlock';
 import { apiFetch } from '@/lib/wagmi';
@@ -13,14 +14,19 @@ export function PostFeed({
   tokenAddress,
   posts,
   canInteract,
+  canManage,
+  pinnedPosts,
   onUpdate,
 }: {
   tokenAddress: string;
   posts: Post[];
   canInteract: boolean;
+  canManage?: boolean;
+  pinnedPosts?: PinnedPost[];
   onUpdate: () => void;
 }) {
   const { address } = useAccount();
+  const [pinningId, setPinningId] = useState<string | null>(null);
 
   async function react(postId: string, reaction: string) {
     if (!address || !canInteract) return;
@@ -36,6 +42,27 @@ export function PostFeed({
     }
   }
 
+  async function togglePin(postId: string) {
+    if (!address || !canManage) return;
+    setPinningId(postId);
+    const pinned = isPostPinned(pinnedPosts || [], postId);
+    try {
+      await apiFetch(`/api/communities/${tokenAddress}/pin-post`, {
+        method: 'POST',
+        wallet: address,
+        body: JSON.stringify({
+          postId,
+          action: pinned ? 'unpin' : 'pin',
+        }),
+      });
+      onUpdate();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Pin failed');
+    } finally {
+      setPinningId(null);
+    }
+  }
+
   if (!posts.length) {
     return (
       <p className="text-center text-muted py-8 border border-dashed border-border rounded-xl">
@@ -46,11 +73,21 @@ export function PostFeed({
 
   return (
     <div className="space-y-4">
-      {posts.map((post) => (
+      {posts.map((post) => {
+        const isPinned = isPostPinned(pinnedPosts || [], post.id);
+        const isMostRecentPin = pinnedPosts?.[0]?.postId === post.id;
+        return (
         <article
           key={post.id}
-          className="bg-surface border border-border rounded-xl p-5"
+          className={`bg-surface border rounded-xl p-5 ${
+            isPinned ? 'border-accent/60 ring-1 ring-accent/20' : 'border-border'
+          }`}
         >
+          {isPinned ? (
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-accent-hover mb-3">
+              {isMostRecentPin ? '📌 Pinned · most recent' : '📌 Pinned'}
+            </div>
+          ) : null}
           <AuthorBlock author={post.author} />
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
@@ -74,10 +111,26 @@ export function PostFeed({
                 );
               })}
             </div>
-            <span className="text-xs text-muted">{formatTime(post.timestamp)}</span>
+            <div className="flex items-center gap-2">
+              {canManage ? (
+                <button
+                  onClick={() => togglePin(post.id)}
+                  disabled={pinningId === post.id}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-border hover:border-accent disabled:opacity-50"
+                >
+                  {pinningId === post.id
+                    ? 'Saving…'
+                    : isPinned
+                      ? 'Unpin'
+                      : 'Pin'}
+                </button>
+              ) : null}
+              <span className="text-xs text-muted">{formatTime(post.timestamp)}</span>
+            </div>
           </div>
         </article>
-      ))}
+      );
+      })}
     </div>
   );
 }

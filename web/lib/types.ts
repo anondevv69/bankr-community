@@ -5,6 +5,21 @@ export interface Author {
   profileImage: string | null;
 }
 
+export interface SocialLinks {
+  /** Token/community X account — separate from any admin personal account */
+  x?: string;
+  /** Beneficiary or community wallet shown on profile */
+  wallet?: string;
+  github?: string;
+  telegram?: string;
+  discord?: string;
+}
+
+export interface PinnedPost {
+  postId: string;
+  pinnedAt: number;
+}
+
 export interface Community {
   tokenAddress: string;
   name: string;
@@ -16,6 +31,10 @@ export interface Community {
   verifiedAt: number | null;
   verifiedBy: string | null;
   description: string;
+  socialLinks?: SocialLinks;
+  /** @deprecated use pinnedPosts */
+  pinnedPostId?: string | null;
+  pinnedPosts?: PinnedPost[];
   postCount: number;
   memberCount: number;
   createdAt: number;

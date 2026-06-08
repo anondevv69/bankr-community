@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCommunity } from '@/lib/db';
 import { checkParticipation } from '@/lib/participation';
+import { isTokenBeneficiary } from '@/lib/community-owner';
 import { normalizeAddr } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -24,8 +25,12 @@ export async function GET(req: Request, { params }: RouteParams) {
     const community = await getCommunity(tokenAddress);
     const chain = community?.chain || 'base';
     const result = await checkParticipation(wallet.toLowerCase(), tokenAddress, chain);
+    const isBeneficiary = await isTokenBeneficiary(wallet.toLowerCase(), tokenAddress);
     return NextResponse.json({
       ...result,
+      isBeneficiary,
+      canEditProfile: isBeneficiary,
+      canPinPosts: isBeneficiary && !!community?.verified,
       wallet: wallet.toLowerCase(),
       chain,
     });

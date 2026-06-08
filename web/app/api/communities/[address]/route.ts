@@ -6,14 +6,19 @@ import {
   getLaunches,
   setCommunities,
   setPostsForToken,
+  getPosts,
 } from '@/lib/db';
 import {
   fetchLaunchByAddress,
   isLaunchOwner,
   getLaunchOwnerWallets,
 } from '@/lib/bankr-api';
+import { isTokenBeneficiary, canEditCommunityProfile } from '@/lib/community-owner';
+import { mergeCommunityDefaults, normalizePinnedPosts, sortPostsWithPinned } from '@/lib/community-posts';
+import { normalizeSocialLinks } from '@/lib/social-links';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
+import type { SocialLinks } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,14 +30,82 @@ export async function GET(_req: Request, { params }: RouteParams) {
   try {
     const [community, posts] = await Promise.all([
       getCommunity(tokenAddress),
-      import('@/lib/db').then((m) => m.getPosts(tokenAddress)),
+      getPosts(tokenAddress),
     ]);
     if (!community) {
       return NextResponse.json({ error: 'Community not found' }, { status: 404 });
     }
-    return NextResponse.json({ community, posts });
+    const normalized = mergeCommunityDefaults(community);
+    return NextResponse.json({
+      community: normalized,
+      posts: sortPostsWithPinned(posts, normalized.pinnedPosts || []),
+    });
   } catch (err) {
     console.error('GET community', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, { params }: RouteParams) {
+  const wallet = getWalletFromRequest(req);
+  if (!wallet) {
+    return NextResponse.json({ error: 'Connect wallet required' }, { status: 401 });
+  }
+
+  const { address } = await params;
+  const tokenAddress = normalizeAddr(address);
+  const body = await req.json().catch(() => ({}));
+
+  try {
+    const communities = await getCommunities();
+    const index = communities.findIndex(
+      (item) => item.tokenAddress.toLowerCase() === tokenAddress
+    );
+    if (index === -1) {
+      return NextResponse.json({ error: 'Community not found' }, { status: 404 });
+    }
+
+    const owner = await canEditCommunityProfile(wallet, tokenAddress);
+    if (!owner) {
+      return NextResponse.json(
+        { error: 'Only the token fee beneficiary can update community profile' },
+        { status: 403 }
+      );
+    }
+
+    const current = mergeCommunityDefaults(communities[index]);
+    const nextDescription =
+      body.description !== undefined
+        ? String(body.description || '').trim().slice(0, 2000)
+        : current.description;
+
+    if (!nextDescription) {
+      return NextResponse.json({ error: 'Description cannot be empty' }, { status: 400 });
+    }
+
+    let nextSocialLinks: SocialLinks = current.socialLinks || {};
+    if (body.socialLinks !== undefined) {
+      nextSocialLinks = normalizeSocialLinks(body.socialLinks || {});
+    }
+
+    const updated = mergeCommunityDefaults({
+      ...current,
+      description: nextDescription,
+      socialLinks: nextSocialLinks,
+    });
+
+    communities[index] = updated;
+    await setCommunities(communities);
+
+    return NextResponse.json({
+      success: true,
+      community: updated,
+      links: {
+        communityPage: communityUrl(tokenAddress),
+      },
+    });
+  } catch (err) {
+    console.error('PATCH community', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -84,6 +157,9 @@ export async function POST(req: Request, { params }: RouteParams) {
       verifiedAt: isOwner ? Date.now() : null,
       verifiedBy: isOwner ? wallet : null,
       description: description || `${launch.tokenName} holder community`,
+      socialLinks: {},
+      pinnedPosts: [],
+      pinnedPostId: null,
       postCount: 0,
       memberCount: 0,
       createdAt: Date.now(),
