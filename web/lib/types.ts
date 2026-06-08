@@ -52,6 +52,14 @@ export interface Community {
   launchTimestamp?: number;
 }
 
+export interface PostSource {
+  client: 'web' | 'bankr-app' | 'agent' | 'api';
+  trigger?: 'manual' | 'x-dm' | 'x-mention' | 'x-reply' | 'terminal' | 'autopilot';
+  viaAgent?: boolean;
+  agentId?: string;
+  externalRef?: string;
+}
+
 export interface Post {
   id: string;
   wallet: string;
@@ -60,6 +68,7 @@ export interface Post {
   reactions: Record<string, string[]>;
   timestamp: number;
   balance?: number;
+  source?: PostSource;
 }
 
 export interface TokenLaunch {

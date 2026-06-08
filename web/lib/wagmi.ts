@@ -15,11 +15,15 @@ export const config = createConfig({
 
 export async function apiFetch(
   url: string,
-  options: RequestInit & { wallet?: string | null } = {}
+  options: RequestInit & {
+    wallet?: string | null;
+    client?: 'web' | 'bankr-app' | 'agent' | 'api';
+  } = {}
 ) {
-  const { wallet, ...init } = options;
+  const { wallet, client, ...init } = options;
   const headers = new Headers(init.headers);
   if (wallet) headers.set('x-wallet-address', wallet);
+  if (client) headers.set('x-client', client);
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }

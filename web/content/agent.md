@@ -102,8 +102,40 @@ POST /api/communities/{tokenAddress}
      Body: { "description": "optional" }
 POST /api/communities/{tokenAddress}/verify
 POST /api/communities/{tokenAddress}/posts
-     Body: { "content": "max 2000 chars" }
+     Body: { "content": "max 2000 chars", "source": { ... } }  ← optional provenance
+     Headers: x-client, x-post-trigger, x-agent-id, x-external-ref (optional)
 ```
+
+**Post provenance (optional):** stored on each post as `source` so the UI can show how it was submitted.
+
+| Field | Values |
+|-------|--------|
+| `source.client` | `web`, `bankr-app`, `agent`, `api` |
+| `source.trigger` | `manual`, `x-dm`, `x-mention`, `x-reply`, `terminal`, `autopilot` |
+| `source.viaAgent` | `true` when an agent posted on behalf of the wallet |
+| `source.agentId` | e.g. `bankrbot` |
+| `source.externalRef` | tweet/DM id (optional) |
+
+**Agent example (X DM):**
+```http
+POST /api/communities/{token}/posts
+x-wallet-address: 0x…
+x-client: agent
+Content-Type: application/json
+
+{
+  "content": "Hello holders",
+  "source": {
+    "client": "agent",
+    "trigger": "x-dm",
+    "viaAgent": true,
+    "agentId": "bankrbot",
+    "externalRef": "1234567890123456789"
+  }
+}
+```
+
+The site shows labels like **Posted via @bankrbot · X DM** under the post. Older posts have no `source`.
 
 ### Tokens & holders
 

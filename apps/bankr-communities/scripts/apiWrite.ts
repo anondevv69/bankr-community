@@ -14,13 +14,20 @@ if (!rawPath.startsWith('/api/')) {
 const method = String(args.method || 'POST').toUpperCase();
 const body = args.body;
 
+const headers = {
+  'x-wallet-address': wallet,
+  'Content-Type': 'application/json',
+  'x-client': args.client ? String(args.client).toLowerCase() : 'bankr-app',
+};
+
+if (args.trigger) headers['x-post-trigger'] = String(args.trigger);
+if (args.agentId) headers['x-agent-id'] = String(args.agentId);
+if (args.externalRef) headers['x-external-ref'] = String(args.externalRef);
+
 try {
   const data = await http.fetch(SITE + rawPath, {
     method,
-    headers: {
-      'x-wallet-address': wallet,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   return { ok: true, data };

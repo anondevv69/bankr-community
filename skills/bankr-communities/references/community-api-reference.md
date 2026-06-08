@@ -44,7 +44,22 @@ GET   /api/communities/{tokenAddress}
 PATCH /api/communities/{tokenAddress}     body: { description?, socialLinks? }  ← fee beneficiary
 POST  /api/communities/{tokenAddress}     body: { description? }
 POST  /api/communities/{tokenAddress}/verify
-POST  /api/communities/{tokenAddress}/posts   body: { content }  → returns postId
+POST  /api/communities/{tokenAddress}/posts   body: { content, source? }  → returns postId
+```
+
+**Post `source` (optional provenance):**
+
+| Field | Values |
+|-------|--------|
+| `client` | `web`, `bankr-app`, `agent`, `api` (or header `x-client`) |
+| `trigger` | `manual`, `x-dm`, `x-mention`, `x-reply`, `terminal`, `autopilot` |
+| `viaAgent` | boolean |
+| `agentId` | e.g. `bankrbot` |
+| `externalRef` | tweet/DM id |
+
+Agents posting after an X DM should set `client: agent`, `trigger: x-dm`, `viaAgent: true`, `agentId: bankrbot`. UI shows e.g. **Posted via @bankrbot · X DM**.
+
+```
 POST  /api/communities/{tokenAddress}/pin-post  body: { postId, action: "pin"|"unpin" }
 ```
 

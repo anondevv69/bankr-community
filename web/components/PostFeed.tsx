@@ -13,6 +13,7 @@ import {
 } from '@/lib/post-filters';
 import { formatTime } from '@/lib/utils';
 import { AuthorBlock } from './AuthorBlock';
+import { PostSourceBadge } from './PostSourceBadge';
 import { apiFetch } from '@/lib/wagmi';
 
 const REACTIONS = ['👍', '❤️', '🔥'] as const;
@@ -164,6 +165,8 @@ export function PostFeed({
                   {post.content}
                 </p>
 
+                <PostSourceBadge source={post.source} />
+
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-border pl-[52px]">
                   <div className="flex gap-2">
                     {REACTIONS.map((emoji) => {
@@ -215,7 +218,7 @@ export function PostForm({
   tokenAddress: string;
   onPosted: () => void;
 }) {
-  const { address } = useAppWallet();
+  const { address, isEmbedded } = useAppWallet();
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
 
@@ -226,7 +229,11 @@ export function PostForm({
       await apiFetch(`/api/communities/${tokenAddress}/posts`, {
         method: 'POST',
         wallet: address,
-        body: JSON.stringify({ content }),
+        client: isEmbedded ? 'bankr-app' : 'web',
+        body: JSON.stringify({
+          content,
+          source: { trigger: 'manual' },
+        }),
       });
       setContent('');
       onPosted();

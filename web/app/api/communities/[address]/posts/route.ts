@@ -7,6 +7,7 @@ import {
 } from '@/lib/db';
 import { checkParticipation } from '@/lib/participation';
 import { resolveAuthorProfile } from '@/lib/profiles';
+import { parsePostSource } from '@/lib/post-source';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
 import { buildPostReplyText } from '@/lib/agent-reply';
@@ -56,6 +57,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     }
 
     const author = await resolveAuthorProfile(wallet);
+    const source = parsePostSource(req, body);
     const postId = `post_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const newPost: Post = {
       id: postId,
@@ -65,6 +67,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       reactions: { '👍': [], '❤️': [], '🔥': [] },
       timestamp: Date.now(),
       balance: participation.balance,
+      ...(source ? { source } : {}),
     };
 
     const posts = await getPosts(tokenAddress);

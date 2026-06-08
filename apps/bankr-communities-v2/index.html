@@ -1276,6 +1276,39 @@
       });
     }
 
+    function postSourceLabel(source) {
+      if (!source) return null;
+      var agent = source.agentId ? '@' + String(source.agentId).replace(/^@/, '') : 'agent';
+      if (source.client === 'bankr-app' && source.trigger === 'manual') {
+        return 'Posted via Bankr app';
+      }
+      switch (source.trigger) {
+        case 'x-dm':
+          return source.viaAgent ? 'Posted via ' + agent + ' · X DM' : 'Posted via X DM';
+        case 'x-mention':
+          return source.viaAgent ? 'Posted via ' + agent + ' · X mention' : 'Posted via X mention';
+        case 'x-reply':
+          return source.viaAgent ? 'Posted via ' + agent + ' · X reply' : 'Posted via X reply';
+        case 'terminal':
+          return source.viaAgent ? 'Posted via ' + agent + ' · terminal' : 'Posted via terminal';
+        case 'autopilot':
+          return source.viaAgent ? 'Posted via ' + agent : 'Posted via agent';
+        case 'manual':
+          if (source.client === 'agent') return 'Posted via ' + agent;
+          if (source.client === 'api') return 'Posted via API';
+          return null;
+        default:
+          return source.viaAgent ? 'Posted via ' + agent : 'Posted via API';
+      }
+    }
+
+    function postSourceHtml(source) {
+      var label = postSourceLabel(source);
+      if (!label) return '';
+      return '<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-left:46px;">' +
+        escapeHtml(label) + '</div>';
+    }
+
     function formatUsd(value) {
       if (value == null || isNaN(value)) return '—';
       const abs = Math.abs(value);
@@ -1858,6 +1891,7 @@
               '<span class="post-time">' + formatTime(post.timestamp) + '</span>' +
             '</div>' +
             '<div class="post-content" style="margin-top:12px;padding-left:46px;">' + escapeHtml(post.content) + '</div>' +
+            postSourceHtml(post.source) +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);padding-left:46px;">' +
               '<div class="reactions">' + reactionBtns + '</div>' +
               pinBtn +
@@ -1895,6 +1929,7 @@
       try {
         await apiWrite('/api/communities/' + currentCommunity.tokenAddress + '/posts', 'POST', {
           content,
+          source: { client: 'bankr-app', trigger: 'manual' },
         });
         document.getElementById('postContent').value = '';
         await openCommunity(currentCommunity.tokenAddress);
