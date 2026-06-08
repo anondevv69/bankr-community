@@ -1,7 +1,7 @@
 {
   "slug": "bankr-communities-v2",
   "title": "Bankr Space",
-  "version": "14",
+  "version": "15",
   "visibility": "public",
   "repo": "https://github.com/anondevv69/bankr-community",
   "branch": "main",
@@ -12,18 +12,18 @@
   "fetchMethod": "http.fetch",
   "files": [
     "manifest.json",
-    "index.html",
     "scripts/apiGet.ts",
-    "scripts/apiWrite.ts"
+    "scripts/apiWrite.ts",
+    "index.html"
   ],
   "schedule": [],
   "verifyAfterInstall": {
-    "footerMustContain": "rayblanco.eth · v14",
-    "manifestVersion": "14",
-    "indexMustContain": "bankr.space",
+    "footerMustContain": "Bankr Space · v15",
+    "manifestVersion": "15",
+    "indexMustContain": "Create Space",
     "dryRunScript": "apiGet",
     "dryRunArgs": { "path": "/api/communities" },
     "dryRunMustInclude": "communities"
   },
-  "notes": "v14 matches bankr.space web UI: logo, Create Space modal, verified filters, hero stats, post filters, light/dark theme."
+  "notes": "Install scripts BEFORE index.html so dry-run apiGet works. Only apiGet + apiWrite scripts."
 }

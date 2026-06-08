@@ -1,8 +1,8 @@
-# Install Bankr Space v15 (slug: `bankr-communities-v2`)
+# Install Bankr Space v15 (slug: `bankr-communities`)
 
 If the one-shot update **gets stuck**, install **one file at a time** (order matters).
 
-**Raw base:** `https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2`
+**Raw base:** `https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities`
 
 ---
 
@@ -19,8 +19,8 @@ If the one-shot update **gets stuck**, install **one file at a time** (order mat
 ## Step 1 — manifest only
 
 ```text
-For app bankr-communities-v2, replace ONLY manifest.json from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/manifest.json
+For app bankr-communities, replace ONLY manifest.json from:
+https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/manifest.json
 
 Confirm version is "15", title "Bankr Space", scripts are ONLY ["apiGet","apiWrite"], schedule is [].
 Remove/delete all other scripts from this app (syncTokens, createPost, createCommunity, etc.).
@@ -32,13 +32,13 @@ Do not change index.html yet.
 ## Step 2 — apiGet + apiWrite
 
 ```text
-For app bankr-communities-v2, write these two files only:
+For app bankr-communities, write these two files only:
 
 scripts/apiGet.ts from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/apiGet.ts
+https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/scripts/apiGet.ts
 
 scripts/apiWrite.ts from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/apiWrite.ts
+https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/scripts/apiWrite.ts
 
 Then run script apiGet with args { "path": "/api/communities" }.
 Expect ok:true and data.communities array.
@@ -49,8 +49,8 @@ Expect ok:true and data.communities array.
 ## Step 3 — index.html
 
 ```text
-For app bankr-communities-v2, replace ONLY index.html from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/index.html
+For app bankr-communities, replace ONLY index.html from:
+https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/index.html
 
 Footer must contain: Bankr Space · v15
 ```
@@ -73,7 +73,7 @@ NOT: "Bankr Communities", "Create Community", or `v13`.
 ## One-shot (if your Bankr agent handles it)
 
 ```text
-Update app bankr-communities-v2 to v15 in this order:
+Update app bankr-communities to v15 in this order:
 
 1. manifest.json
 2. scripts/apiGet.ts
@@ -81,7 +81,7 @@ Update app bankr-communities-v2 to v15 in this order:
 4. index.html
 
 URLs under:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/
+https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/
 
 Delete legacy scripts. schedule []. Only apiGet + apiWrite.
 Footer must say Bankr Space · v15. Then dry-run apiGet path /api/communities.

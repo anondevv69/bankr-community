@@ -1006,7 +1006,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · Bankr Space · v14
+    made with love &lt;3 rayblanco.eth · Bankr Space · v15
   </footer>
 
   <div class="modal-overlay" id="createSearchModal" onclick="closeCreateSearchModal()">
@@ -1891,6 +1891,7 @@
               '<span class="post-time">' + formatTime(post.timestamp) + '</span>' +
             '</div>' +
             '<div class="post-content" style="margin-top:12px;padding-left:46px;">' + escapeHtml(post.content) + '</div>' +
+            postSourceHtml(post.source) +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);padding-left:46px;">' +
               '<div class="reactions">' + reactionBtns + '</div>' +
               pinBtn +
@@ -1928,6 +1929,7 @@
       try {
         await apiWrite('/api/communities/' + currentCommunity.tokenAddress + '/posts', 'POST', {
           content,
+          source: { client: 'bankr-app', trigger: 'manual' },
         });
         document.getElementById('postContent').value = '';
         await openCommunity(currentCommunity.tokenAddress);
