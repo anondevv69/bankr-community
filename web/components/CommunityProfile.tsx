@@ -7,7 +7,6 @@ import { hasSocialLinks, socialLinksForDisplay } from '@/lib/social-links';
 import { VerifiedBeneficiarySection } from '@/components/VerifiedBeneficiarySection';
 import { MarketStats } from '@/components/MarketStats';
 import { TokenAvatar } from '@/components/TokenAvatar';
-import { DexPaidBanner } from '@/components/DexPaidBanner';
 import { apiFetch } from '@/lib/wagmi';
 import { shortAddr } from '@/lib/utils';
 
@@ -222,8 +221,6 @@ export function CommunityProfile({
           layout="sidebar"
         />
       </div>
-
-      <DexPaidBanner market={market} />
     </div>
   );
 }
