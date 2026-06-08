@@ -1,8 +1,8 @@
 {
   "slug": "bankr-communities-v2",
-  "title": "Bankr Communities",
+  "title": "Bankr Space",
   "version": "13",
-  "description": "Token-gated communities for Bankr-launched tokens. Native Bankr UI backed by bankr-community.vercel.app API — same data as the public site.",
+  "description": "Bankr Space — token-gated communities for Bankr-launched tokens. Native Bankr UI backed by bankr-community.vercel.app API.",
   "tags": ["community", "tokens", "social", "bankr"],
   "permissions": ["read:wallet", "fetch:http"],
   "scripts": ["apiGet", "apiWrite"],

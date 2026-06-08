@@ -11,14 +11,14 @@ export function Header({ syncUpdatedAt }: { syncUpdatedAt?: number | null }) {
     <header className="mb-7">
       {!embed.isEmbedded ? (
         <>
-          <h1 className="text-[26px] font-bold tracking-tight">Bankr Communities</h1>
+          <h1 className="text-[26px] font-bold tracking-tight">Bankr Space</h1>
           <p className="text-muted text-sm mt-1">
-            Token-gated communities for Bankr-deployed tokens
+            Token-gated communities for Bankr-launched tokens
           </p>
         </>
       ) : (
         <p className="text-muted text-sm">
-          Same experience as bankr-community.vercel.app — wallet via Bankr sign-in
+          Bankr Space — wallet via Bankr sign-in
         </p>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3 mt-4 px-3.5 py-2.5 bg-surface border border-border rounded-xl text-[13px]">
@@ -39,14 +39,14 @@ export function Footer() {
   if (embed.isEmbedded) {
     return (
       <footer className="text-center py-6 text-muted text-xs">
-        Bankr Communities · embedded · v12
+        Bankr Space · embedded
       </footer>
     );
   }
 
   return (
   <footer className="text-center py-8 text-muted text-[13px]">
-    made with love &lt;3 rayblanco.eth · web v2
+    made with love &lt;3 rayblanco.eth · Bankr Space
     {' · '}
     <a
       href="/agent.md"

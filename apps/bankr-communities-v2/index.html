@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bankr Communities</title>
+  <title>Bankr Space</title>
   <style>
     :root {
       --bg: #0a0a0f;
@@ -648,8 +648,8 @@
 <body>
   <div class="container">
     <header>
-      <h1>Bankr Communities</h1>
-      <p>Token-gated communities for Bankr-deployed tokens</p>
+      <h1>Bankr Space</h1>
+      <p>Token-gated communities for Bankr-launched tokens</p>
       <div class="wallet-bar">
         <span id="walletDisplay">Connecting...</span>
         <span class="sync-meta" id="syncMeta"></span>
@@ -711,12 +711,14 @@
           <button class="btn btn-secondary btn-sm" onclick="copyContract()">Copy</button>
         </div>
         <div class="detail-desc" id="detailDesc"></div>
+        <div id="socialLinksPanel" style="margin-top:12px;"></div>
         <div id="verificationBadge"></div>
         <div id="verifyBanner"></div>
         <div id="marketPanel" style="margin-top:14px;"></div>
+        <div id="beneficiaryPanel" style="margin-top:14px;"></div>
         <div id="holderBanner"></div>
         <div style="margin-top:12px;">
-          <button class="btn btn-secondary btn-sm" type="button" onclick="openFullSite()">Open full site (profile edit, pin)</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="openFullSite()">Open full site (edit profile)</button>
         </div>
       </div>
       <div id="postFormWrap" class="post-form" style="display: none;">
@@ -733,7 +735,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · v13 · Vercel API
+    made with love &lt;3 rayblanco.eth · Bankr Space · v13
   </footer>
 
   <div class="modal-overlay" id="createModal">
@@ -1047,6 +1049,68 @@
       `).join('');
     }
 
+    function renderSocialLinks(comm) {
+      const el = document.getElementById('socialLinksPanel');
+      const links = comm.socialLinks || {};
+      const items = [];
+      if (links.x) items.push({ label: 'Token X', href: links.x });
+      if (links.website) items.push({ label: 'Website', href: links.website });
+      if (links.github) items.push({ label: 'GitHub', href: links.github });
+      if (links.telegram) items.push({ label: 'Telegram', href: links.telegram });
+      if (links.discord) items.push({ label: 'Discord', href: links.discord });
+      if (!items.length) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
+        items.map(function (item) {
+          return '<a class="btn btn-secondary btn-sm" href="' + escapeHtml(item.href) +
+            '" target="_blank" rel="noreferrer">' + escapeHtml(item.label) + '</a>';
+        }).join('') + '</div>';
+    }
+
+    function formatVerifiedDate(ts) {
+      if (!ts) return null;
+      return new Date(ts).toLocaleDateString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric',
+      });
+    }
+
+    function renderBeneficiary(comm, beneficiary) {
+      const el = document.getElementById('beneficiaryPanel');
+      if (!comm.verified) {
+        el.innerHTML = '';
+        return;
+      }
+      const verifiedDate = formatVerifiedDate(comm.verifiedAt);
+      const xHandle = beneficiary && beneficiary.xUsername
+        ? beneficiary.xUsername.replace(/^@/, '')
+        : null;
+      let inner = '<div style="padding:14px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.05);border-radius:8px;font-size:13px;">';
+      inner += '<div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px;">✓ Verified by token beneficiary</div>';
+      if (beneficiary) {
+        inner += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">';
+        if (beneficiary.profileImageUrl) {
+          inner += '<img src="' + escapeHtml(beneficiary.profileImageUrl) + '" alt="" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border);" />';
+        }
+        inner += '<div style="flex:1;min-width:180px;">';
+        if (beneficiary.xUrl && xHandle) {
+          inner += '<div style="margin-bottom:6px;"><span style="color:var(--muted);font-size:11px;">X account </span>';
+          inner += '<a href="' + escapeHtml(beneficiary.xUrl) + '" target="_blank" rel="noreferrer" style="color:var(--accent-hover);">@' + escapeHtml(xHandle) + '</a></div>';
+        }
+        if (beneficiary.wallet) {
+          inner += '<div style="margin-bottom:6px;"><span style="color:var(--muted);font-size:11px;">Beneficiary wallet </span>';
+          inner += '<code style="color:var(--accent-hover);font-size:12px;">' + escapeHtml(beneficiary.wallet) + '</code></div>';
+        }
+        if (verifiedDate) {
+          inner += '<div style="color:var(--muted);font-size:12px;">Verified ' + escapeHtml(verifiedDate) + '</div>';
+        }
+        inner += '</div></div>';
+      }
+      inner += '</div>';
+      el.innerHTML = inner;
+    }
+
     async function renderMarketPanel(tokenAddress) {
       const el = document.getElementById('marketPanel');
       el.innerHTML = '<div class="loading">Loading market data…</div>';
@@ -1060,6 +1124,12 @@
         const dexPaid = m.dexScreener && m.dexScreener.enhancedInfoPaid
           ? '<span class="badge badge-verified">Dex paid ✓</span>'
           : '<span class="badge badge-unverified">Dex not paid</span>';
+        const txns = m.txns24h
+          ? m.txns24h.buys + ' buys · ' + m.txns24h.sells + ' sells'
+          : '—';
+        const dexLink = m.dexUrl
+          ? '<a href="' + escapeHtml(m.dexUrl) + '" target="_blank" rel="noreferrer" style="color:var(--accent-hover);font-size:12px;">View on DexScreener →</a>'
+          : '';
         el.innerHTML = `
           <div style="padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;font-size:13px;">
             <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
@@ -1070,7 +1140,10 @@
               <span>24h vol ${formatUsd(m.volume24h)}</span>
               <span>24h ${m.priceChange24h != null ? (m.priceChange24h > 0 ? '+' : '') + m.priceChange24h.toFixed(2) + '%' : '—'}</span>
               <span>Liq ${formatUsd(m.liquidityUsd)}</span>
+              <span>Price ${formatUsd(m.priceUsd)}</span>
+              <span>24h txns ${txns}</span>
             </div>
+            <div style="margin-top:8px;">${dexLink}</div>
           </div>`;
       } catch (err) {
         el.innerHTML = '<div class="error">Market data unavailable</div>';
@@ -1100,8 +1173,10 @@
         document.getElementById('detailDesc').textContent =
           currentCommunity.description || 'A community for ' + currentCommunity.name + ' token holders.';
 
+        renderSocialLinks(currentCommunity);
         renderVerificationUI(currentCommunity);
         renderMarketPanel(tokenAddress);
+        renderBeneficiary(currentCommunity, currentBeneficiary);
         await checkHolderStatus(tokenAddress);
         await renderFeed(tokenAddress);
       } catch (err) {
@@ -1115,7 +1190,7 @@
       const verifyEl = document.getElementById('verifyBanner');
 
       if (comm.verified) {
-        badgeEl.innerHTML = '<span class="badge badge-verified" style="margin-top:12px;display:inline-block;">✓ Verified by token owner</span>';
+        badgeEl.innerHTML = '<span class="badge badge-verified" style="margin-top:12px;display:inline-block;">✓ Verified by token beneficiary</span>';
         verifyEl.innerHTML = '';
         return;
       }
@@ -1222,13 +1297,14 @@
         }).join('');
 
         const pinned = isPostPinned(post.id);
+        const mostRecentPin = currentCommunity?.pinnedPosts?.[0]?.postId === post.id;
         const pinBtn = canPin
           ? `<button class="btn btn-secondary btn-sm" onclick="togglePin('${post.id}')">${pinned ? 'Unpin' : 'Pin'}</button>`
           : '';
 
         return `
           <div class="post">
-            ${pinned ? '<span class="badge badge-verified">📌 Pinned</span> ' : ''}
+            ${pinned ? '<span class="badge badge-verified">' + (mostRecentPin ? '📌 Pinned · most recent' : '📌 Pinned') + '</span> ' : ''}
             ${renderAuthorBlock(post)}
             <div class="post-header">
               <span class="post-badge">${post.balance ? 'Holder · ' + Number(post.balance).toLocaleString() + ' tokens' : 'Community post'}</span>

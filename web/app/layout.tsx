@@ -3,8 +3,8 @@ import { Providers } from './providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Bankr Communities',
-  description: 'Token-gated communities for Bankr-deployed tokens',
+  title: 'Bankr Space',
+  description: 'Token-gated communities for Bankr-launched tokens',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
