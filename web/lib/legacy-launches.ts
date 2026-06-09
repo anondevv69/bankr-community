@@ -1,11 +1,26 @@
+import { readClankerDeployer } from './clanker-deployer';
 import type { TokenLaunch } from './types';
 import { normalizeAddr } from './utils';
+
+const BANKR_API = 'https://api.bankr.bot';
 
 type LegacyLaunchEntry = TokenLaunch & {
   searchAliases?: string[];
 };
 
-/** Pre–token-launches API Bankr tokens (old Clanker / Farcaster deploys). */
+type BankrTokenSearchHit = {
+  address?: string;
+  symbol?: string;
+  name?: string;
+  logoURI?: string;
+};
+
+/**
+ * Pre–token-launches API Bankr tokens (legacy Clanker / Farcaster deploys).
+ * Bankr's GET /token-launches/:addr returns 404 for these; fee claim may still
+ * work via POST /token-launches/:addr/fees/claim (auto-detects Clanker vs Doppler).
+ * See https://docs.bankr.bot/token-launching/claiming-fees/
+ */
 const LEGACY_LAUNCHES: LegacyLaunchEntry[] = [
   {
     activityId: 'legacy:bnkr-bankrcoin',
@@ -32,12 +47,62 @@ function stripLegacyMeta(entry: LegacyLaunchEntry): TokenLaunch {
   return launch;
 }
 
-export function getLegacyLaunchByAddress(address: string): TokenLaunch | null {
+export function getCuratedLegacyLaunchByAddress(address: string): TokenLaunch | null {
   const token = normalizeAddr(address);
   const hit = LEGACY_LAUNCHES.find(
     (l) => l.tokenAddress.toLowerCase() === token
   );
   return hit ? stripLegacyMeta(hit) : null;
+}
+
+/** @deprecated Use resolveLegacyLaunchByAddress for async resolution. */
+export function getLegacyLaunchByAddress(address: string): TokenLaunch | null {
+  return getCuratedLegacyLaunchByAddress(address);
+}
+
+async function fetchBankrTokenSearchHit(
+  address: string
+): Promise<BankrTokenSearchHit | null> {
+  const token = normalizeAddr(address);
+  try {
+    const res = await fetch(
+      `${BANKR_API}/tokens/search?query=${encodeURIComponent(token)}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tokens: BankrTokenSearchHit[] = data.tokens || [];
+    return (
+      tokens.find((t) => t.address?.toLowerCase() === token) || null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** Build a launch record from tokens/search + on-chain deployer (default beneficiary). */
+export async function resolveLegacyLaunchByAddress(
+  address: string
+): Promise<TokenLaunch | null> {
+  const curated = getCuratedLegacyLaunchByAddress(address);
+  if (curated) return curated;
+
+  const hit = await fetchBankrTokenSearchHit(address);
+  if (!hit?.address) return null;
+
+  const deployer = await readClankerDeployer(hit.address);
+
+  return {
+    activityId: `legacy:search:${normalizeAddr(hit.address)}`,
+    tokenAddress: normalizeAddr(hit.address),
+    tokenName: hit.name || 'Unknown token',
+    tokenSymbol: hit.symbol || 'TOKEN',
+    chain: 'base',
+    timestamp: Date.now(),
+    imageUri: hit.logoURI || null,
+    feeRecipient: deployer ? { walletAddress: deployer } : undefined,
+    deployer: deployer ? { walletAddress: deployer } : undefined,
+  };
 }
 
 export function findLegacyLaunchesByQuery(query: string): TokenLaunch[] {

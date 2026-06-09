@@ -1,4 +1,4 @@
-import { getLegacyLaunchByAddress } from './legacy-launches';
+import { resolveLegacyLaunchByAddress } from './legacy-launches';
 import type { TokenLaunch } from './types';
 
 const BANKR_API = 'https://api.bankr.bot';
@@ -23,7 +23,7 @@ export async function fetchLaunchByAddress(address: string): Promise<TokenLaunch
     // fall through to legacy registry
   }
 
-  return getLegacyLaunchByAddress(address);
+  return resolveLegacyLaunchByAddress(address);
 }
 
 export async function searchBankrTokens(query: string): Promise<{ address: string }[]> {
