@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { useConnectWallet } from '@/components/WalletButton';
 import { useAppWallet } from '@/hooks/useAppWallet';
 import { useEmbeddedBankr } from '@/components/EmbeddedBankrProvider';
-import { Footer } from '@/components/Header';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { SiteLogo } from '@/components/SiteLogo';
+import { Footer, Header } from '@/components/Header';
 import { CommunityProfile } from '@/components/CommunityProfile';
 import { PostFeed, PostForm } from '@/components/PostFeed';
 import type { BeneficiaryInfo, Community, Post } from '@/lib/types';
@@ -127,15 +125,7 @@ export default function CommunityPage({ params }: { params: { address: string } 
 
   return (
     <div className="max-w-[1100px] mx-auto px-5 pb-16">
-      <div className="flex items-center justify-between gap-3 mb-4 pt-4">
-        <div className="flex items-center gap-3">
-          <SiteLogo size={32} />
-          <Link href="/" className="text-sm text-muted hover:text-text">
-            ← Back to spaces
-          </Link>
-        </div>
-        <ThemeToggle />
-      </div>
+      <Header backHref="/" />
 
       <CommunityProfile
         community={community}

@@ -5,7 +5,6 @@ import { Header, Footer } from '@/components/Header';
 import { useEmbeddedBankr } from '@/components/EmbeddedBankrProvider';
 import { CommunityCard } from '@/components/CommunityCard';
 import { CreateCommunity } from '@/components/CreateCommunity';
-import { SkillInstallCard } from '@/components/SkillInstallCard';
 import type { Community, TokenMarketStats } from '@/lib/types';
 
 type VerifiedFilter = 'all' | 'verified' | 'unverified';
@@ -76,8 +75,6 @@ export default function HomePage() {
   return (
     <div className={`max-w-[1100px] mx-auto px-5 pb-16 ${embed.isEmbedded ? 'pt-4' : ''}`}>
       <Header syncUpdatedAt={syncAt} />
-
-      {!embed.isEmbedded ? <SkillInstallCard compact /> : null}
 
       <section>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
