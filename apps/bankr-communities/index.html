@@ -1006,7 +1006,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · Bankr Space · v19
+    made with love &lt;3 rayblanco.eth · Bankr Space · v20 · <a href="https://bankr.bot/u/0x374d91a5674fa7cf86e725093b5848b97e1e13b4/apps/bankr-communities-v2" onclick="openBankrApp(event)">Bankr App</a>
   </footer>
 
   <div class="modal-overlay" id="createSearchModal" onclick="closeCreateSearchModal()">
@@ -1385,6 +1385,13 @@
 
       await loadMarketsForCommunities();
       renderCommunities();
+    }
+
+    function openBankrApp(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      var url = 'https://bankr.bot/u/0x374d91a5674fa7cf86e725093b5848b97e1e13b4/apps/bankr-communities-v2';
+      if (typeof bankr !== 'undefined' && bankr.openExternal) bankr.openExternal(url);
+      else window.open(url, '_blank');
     }
 
     function openFullSite() {

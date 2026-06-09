@@ -1,7 +1,7 @@
 {
   "slug": "bankr-communities",
   "title": "Bankr Space",
-  "version": "19",
+  "version": "20",
   "description": "Bankr Space — token-gated spaces for Bankr-launched tokens. Native Bankr UI backed by bankr.space API.",
   "tags": ["community", "tokens", "social", "bankr"],
   "permissions": ["read:wallet", "fetch:http"],
