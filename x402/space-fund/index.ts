@@ -1,25 +1,12 @@
 /**
- * Bankr x402 handler — credits space fundraising progress on bankr.space after USDC payment.
+ * Bankr x402 — credit space fundraising on bankr.space after USDC payment.
  *
- * Deploy:
- *   1. bankr x402 init && copy this folder to x402/space-fund
- *   2. bankr x402 env set SPACE_SITE_URL=https://www.bankr.space
- *   3. bankr x402 env set X402_FUND_WEBHOOK_SECRET=<same as Vercel>
- *   4. bankr x402 deploy
- *   5. Set Vercel NEXT_PUBLIC_X402_SPACE_FUND_URL=https://x402.bankr.bot/{yourWallet}/space-fund
+ * Env (bankr x402 env set):
+ *   SPACE_SITE_URL=https://www.bankr.space
+ *   X402_FUND_WEBHOOK_SECRET=<same as Vercel>
  *
  * Query: ?token=0x…&campaign=dex-profile&amount=25
- * Price is dynamic — configure base price $1; handler validates amount param.
- * For variable amounts use Bankr "upto" scheme in bankr.x402.json if needed.
  */
-
-type CreditResponse = {
-  success?: boolean;
-  raisedUsd?: number;
-  goalUsd?: number;
-  error?: string;
-};
-
 export default async function handler(req: Request) {
   const url = new URL(req.url);
   const token = String(url.searchParams.get('token') || '').trim().toLowerCase();
@@ -49,23 +36,22 @@ export default async function handler(req: Request) {
     body: JSON.stringify({
       campaignId,
       amountUsd,
-      txRef: req.headers.get('x-payment-tx') || req.headers.get('x-transaction-id') || null,
     }),
   });
 
-  const data = (await res.json().catch(() => ({}))) as CreditResponse;
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { error: data.error || `Credit failed (${res.status})` };
   }
 
   return {
     success: true,
-    message: `Thank you — $${amountUsd} credited toward ${campaignId} for ${token}`,
+    message: `Thank you — $${amountUsd} credited toward ${campaignId}`,
     token,
     campaignId,
     raisedUsd: data.raisedUsd,
     goalUsd: data.goalUsd,
-    funded: data.raisedUsd != null && data.goalUsd != null ? data.raisedUsd >= data.goalUsd : false,
+    funded: Boolean(data.funded),
     spaceUrl: `${site}/community/${token}`,
   };
 }
