@@ -29,7 +29,7 @@ export function FundraisingWidget({
   layout?: 'horizontal' | 'sidebar';
 }) {
   const { isEmbedded, connectWallet } = useAppWallet();
-  const { isConnected, onBase, resolveWalletClient } = usePaymentWalletClient();
+  const { address, isConnected, onBase } = usePaymentWalletClient();
   const { switchChain } = useSwitchChain();
   const [campaigns, setCampaigns] = useState<FundraisingView[]>([]);
   const [x402BaseUrl, setX402BaseUrl] = useState<string | null>(null);
@@ -89,11 +89,9 @@ export function FundraisingWidget({
       return;
     }
 
-    const walletClient = await resolveWalletClient();
-    if (!walletClient) {
-      setPayHint(
-        'Wallet connected but not ready to sign. Open MetaMask, approve bankr.space, then try again.'
-      );
+    if (!address) {
+      setPayHint('Connect a Base wallet with USDC to pay.');
+      connectWallet();
       return;
     }
 
@@ -102,7 +100,7 @@ export function FundraisingWidget({
     setPayHint(`Confirm the $${SPACE_FUND_X402_MAX_USDC} USDC payment in your wallet…`);
 
     try {
-      const result = await paySpaceFundUrl(walletClient, url);
+      const result = await paySpaceFundUrl(address, url);
       if (result.success) {
         setPayHint(
           result.message ||

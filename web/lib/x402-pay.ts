@@ -1,6 +1,6 @@
 import { ChainIdToNetwork, PaymentRequirementsSchema } from 'x402/types';
 import { createPaymentHeader, selectPaymentRequirements } from 'x402/client';
-import type { WalletClient } from 'viem';
+import type { Address } from 'viem';
 import { toX402Signer } from '@/lib/x402-signer';
 
 /** Matches bankr.x402.json price for space-fund ($1 USDC per request). */
@@ -47,11 +47,7 @@ function formatPayError(data: unknown, status: number): string {
   return `Payment failed (${status})`;
 }
 
-export async function paySpaceFundUrl(walletClient: WalletClient, fundUrl: string) {
-  if (!walletClient.account) {
-    throw new Error('Wallet account not connected');
-  }
-
+export async function paySpaceFundUrl(walletAddress: Address, fundUrl: string) {
   const response = await fetch(fundUrl);
   if (response.status !== 402) {
     const data = await response.json().catch(() => ({}));
@@ -86,17 +82,14 @@ export async function paySpaceFundUrl(walletClient: WalletClient, fundUrl: strin
     );
   }
 
-  const network =
-    ChainIdToNetwork[walletClient.chain?.id as keyof typeof ChainIdToNetwork] ?? 'base';
-
-  const selected = selectPaymentRequirements(parsedPaymentRequirements, network, 'exact');
+  const selected = selectPaymentRequirements(parsedPaymentRequirements, 'base', 'exact');
 
   if (BigInt(selected.maxAmountRequired) > USDC_BASE_UNITS) {
     throw new Error(`Payment amount exceeds maximum allowed ($${SPACE_FUND_X402_MAX_USDC} USDC)`);
   }
 
   const paymentHeader = await createPaymentHeader(
-    toX402Signer(walletClient),
+    toX402Signer(walletAddress),
     x402Version ?? 2,
     selected
   );
