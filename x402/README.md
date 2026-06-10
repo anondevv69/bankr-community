@@ -26,9 +26,11 @@ cp x402/bankr.x402.json ~/.bankr/bankr.x402.json # merge services if needed
 3. Set secrets:
 
 ```bash
-bankr x402 env set BANKR_SPACE_SITE_URL=https://bankr.space
+bankr x402 env set SPACE_SITE_URL=https://www.bankr.space
 bankr x402 env set X402_FUND_WEBHOOK_SECRET=$(openssl rand -hex 32)
 ```
+
+Note: do **not** use `BANKR_*` env names on x402 Cloud — that prefix is reserved by Bankr.
 
 4. Deploy:
 

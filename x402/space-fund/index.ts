@@ -3,7 +3,7 @@
  *
  * Deploy:
  *   1. bankr x402 init && copy this folder to x402/space-fund
- *   2. bankr x402 env set BANKR_SPACE_SITE_URL=https://bankr.space
+ *   2. bankr x402 env set SPACE_SITE_URL=https://www.bankr.space
  *   3. bankr x402 env set X402_FUND_WEBHOOK_SECRET=<same as Vercel>
  *   4. bankr x402 deploy
  *   5. Set Vercel NEXT_PUBLIC_X402_SPACE_FUND_URL=https://x402.bankr.bot/{yourWallet}/space-fund
@@ -33,7 +33,7 @@ export default async function handler(req: Request) {
     return { error: 'amount query param must be a positive USD number' };
   }
 
-  const site = String(process.env.BANKR_SPACE_SITE_URL || 'https://bankr.space').replace(/\/$/, '');
+  const site = String(process.env.SPACE_SITE_URL || 'https://www.bankr.space').replace(/\/$/, '');
   const secret = process.env.X402_FUND_WEBHOOK_SECRET?.trim();
   if (!secret) {
     return { error: 'X402_FUND_WEBHOOK_SECRET not configured on x402 service' };
