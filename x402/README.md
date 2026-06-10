@@ -5,13 +5,16 @@ Optional USDC contributions toward DexScreener or custom goals. **Posts stay fre
 ## Architecture
 
 ```text
-Donor → x402.bankr.bot/{wallet}/space-fund?token=0x…&campaign=dex-profile&amount=25
-     → Bankr verifies USDC payment
-     → space-fund handler POSTs to bankr.space/api/communities/{token}/fundraising/credit
+Donor → bankr.space Contribute (same-origin proxy)
+     → x402.bankr.bot/{wallet}/space-fund?token=0x…&campaign=dex-profile&amount=1
+     → Bankr verifies USDC ($1/request) via EIP-3009 → settles on-chain
+     → space-fund handler POSTs to www.bankr.space/.../fundraising/credit
      → KV updates raisedUsd → progress bar on space page
 ```
 
-USDC settles to the **x402 service owner wallet** (configure `payTo` / beneficiary routing in Bankr x402 dashboard). For direct-to-fee-recipient routing, deploy the x402 service from the **beneficiary’s Bankr wallet** instead.
+**Important:** Do not use plain USDC `transfer()` to the beneficiary for fundraising — that bypasses x402 and will not appear in the x402 dashboard. Each Contribute click is one x402 request ($1 USDC).
+
+USDC settles through Bankr x402 (facilitator → your configured pay-to wallet). Dashboard **Pay To** is your earnings wallet; MetaMask shows the x402 facilitator contract on signature — expected.
 
 ## Deploy the x402 handler
 
@@ -23,14 +26,16 @@ cp -R x402/space-fund ~/.bankr/x402/space-fund   # or your bankr x402 project
 cp x402/bankr.x402.json ~/.bankr/bankr.x402.json # merge services if needed
 ```
 
-3. Set secrets:
+3. Set secrets (use **www** — apex redirects break x402 Cloud `fetch`):
 
 ```bash
 bankr x402 env set SPACE_SITE_URL=https://www.bankr.space
 bankr x402 env set X402_FUND_WEBHOOK_SECRET=$(openssl rand -hex 32)
 ```
 
-Note: do **not** use `BANKR_*` env names on x402 Cloud — that prefix is reserved by Bankr.
+Use the **same** `X402_FUND_WEBHOOK_SECRET` on Vercel. Note: do **not** use `BANKR_*` env names on x402 Cloud — that prefix is reserved by Bankr.
+
+If Request Logs show `fetch() did not return a Response`, redeploy after setting `SPACE_SITE_URL=https://www.bankr.space` and matching secrets.
 
 4. Deploy:
 
