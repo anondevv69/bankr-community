@@ -12,20 +12,10 @@
       "description": "Poll platform-spaces, post fundraiser milestones, run skill-linked actions when funded",
       "category": "crypto",
       "schedule": "*/15 * * * *",
-      "default_enabled": false,
-      "secrets_required": ["CRON_SECRET"],
+      "default_enabled": true,
+      "secrets_required": ["CRON_SECRET", "BANKR_LLM_KEY"],
       "secrets_optional": ["PLATFORM_AGENT_WALLET", "BANKR_SPACE_URL"],
       "capabilities": ["external_api", "writes_external_host", "onchain_writes"]
-    },
-    {
-      "slug": "bankr-communities",
-      "path": "skills/bankr-communities",
-      "description": "Bankr Space API rules — post, verify, fundraise, terminology (companion context for worker)",
-      "category": "social",
-      "schedule": "0 0 1 1 *",
-      "default_enabled": false,
-      "secrets_optional": [],
-      "capabilities": ["external_api", "writes_external_host"]
     }
   ]
 }
