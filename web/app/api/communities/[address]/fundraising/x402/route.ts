@@ -78,8 +78,12 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: err }, { status: upstream.status });
     }
 
-    // Handler already credited (legacy handler) — pass through.
-    if (data.success === true && data.raisedUsd != null) {
+    // Legacy handler credited KV (raisedUsd > 0). New handler returns raisedUsd: 0 — credit below.
+    const handlerCredited =
+      data.success === true &&
+      Number(data.raisedUsd) > 0 &&
+      Number(data.goalUsd) > 0;
+    if (handlerCredited) {
       return NextResponse.json(data, { status: 200 });
     }
 

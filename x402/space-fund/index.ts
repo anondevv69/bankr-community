@@ -20,8 +20,11 @@ export default async function handler(req: Request) {
     return { error: 'amount query param must be a positive USD number' };
   }
 
+  // Match bankr.x402.json output schema. KV credit runs on www.bankr.space proxy.
   return {
-    acknowledged: true,
+    success: true,
+    raisedUsd: 0,
+    goalUsd: 0,
     token,
     campaignId,
     requestedAmountUsd: amountUsd,
