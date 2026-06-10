@@ -1,22 +1,13 @@
 /**
- * Bankr x402 — credit space fundraising after USDC payment.
+ * Bankr x402 space-fund handler (runs on x402.bankr.bot — NOT on bankr.space).
  *
- * Env (bankr x402 env set):
- *   SPACE_SITE_URL=https://www.bankr.space
- *   X402_FUND_WEBHOOK_SECRET=<same as Vercel>
+ * Bankr verifies USDC payment, runs this handler, then settles on-chain only if
+ * the handler returns HTTP 200. KV credit runs on www.bankr.space (x402 proxy route)
+ * so secrets stay on Vercel and we avoid fetch() from x402 Cloud (Bun runtime crash:
+ * "fetch() did not return a Response").
  *
  * Query: ?token=0x…&campaign=dex-profile&amount=25
- * Price is $1 USDC per request (bankr.x402.json). amount param is donor intent only.
  */
-const CREDIT_USD = 1;
-
-type CreditResponse = {
-  success?: boolean;
-  raisedUsd?: number;
-  goalUsd?: number;
-  error?: string;
-};
-
 function parseRequestUrl(req: Request): URL {
   try {
     return new URL(req.url);
@@ -25,55 +16,47 @@ function parseRequestUrl(req: Request): URL {
   }
 }
 
-export default async function handler(req: Request) {
-  const url = parseRequestUrl(req);
-  const token = String(url.searchParams.get('token') || '').trim().toLowerCase();
-  const campaignId = String(url.searchParams.get('campaign') || 'dex-profile').trim();
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
-  if (!/^0x[a-f0-9]{40}$/.test(token)) {
-    return { success: false, raisedUsd: 0, goalUsd: 0, error: 'token query param required' };
-  }
-
-  const site = String(process.env.SPACE_SITE_URL || 'https://www.bankr.space').replace(/\/$/, '');
-  const secret = process.env.X402_FUND_WEBHOOK_SECRET?.trim();
-  if (!secret) {
-    console.error('space-fund: X402_FUND_WEBHOOK_SECRET not set');
-    // Return success shape so payment can settle; bankr.space proxy credits as fallback.
-    return { success: true, raisedUsd: 0, goalUsd: 0 };
-  }
-
-  const creditUrl = `${site}/api/communities/${token}/fundraising/credit`;
-
+export default async function handler(req: Request): Promise<Response> {
   try {
-    const res = await fetch(creditUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${secret}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ campaignId, amountUsd: CREDIT_USD }),
-      redirect: 'follow',
-    });
+    const url = parseRequestUrl(req);
+    const token = String(url.searchParams.get('token') || '').trim().toLowerCase();
+    const campaignId = String(url.searchParams.get('campaign') || 'dex-profile').trim();
 
-    if (!res || typeof res.ok !== 'boolean') {
-      console.error('space-fund: credit fetch did not return a Response');
-      return { success: true, raisedUsd: 0, goalUsd: 0 };
+    if (!/^0x[a-f0-9]{40}$/.test(token)) {
+      return jsonResponse({
+        success: false,
+        raisedUsd: 0,
+        goalUsd: 0,
+        error: 'token query param required (0x contract address)',
+      });
     }
 
-    const data = (await res.json().catch(() => ({}))) as CreditResponse;
-    if (!res.ok) {
-      console.error('space-fund: credit failed', res.status, data.error);
-      return { success: true, raisedUsd: 0, goalUsd: 0 };
+    if (!['dex-profile', 'dex-boost', 'custom'].includes(campaignId)) {
+      return jsonResponse({
+        success: false,
+        raisedUsd: 0,
+        goalUsd: 0,
+        error: 'invalid campaign query param',
+      });
     }
 
-    return {
+    // Match bankr.x402.json output schema. raisedUsd/goalUsd filled by bankr.space proxy.
+    return jsonResponse({
       success: true,
-      raisedUsd: Number(data.raisedUsd) || 0,
-      goalUsd: Number(data.goalUsd) || 0,
-    };
+      raisedUsd: 0,
+      goalUsd: 0,
+      token,
+      campaignId,
+    });
   } catch (err) {
     console.error('space-fund handler', err);
-    return { success: true, raisedUsd: 0, goalUsd: 0 };
+    return jsonResponse({ success: true, raisedUsd: 0, goalUsd: 0 });
   }
 }

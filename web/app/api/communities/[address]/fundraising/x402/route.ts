@@ -14,8 +14,9 @@ const CAMPAIGN_IDS: CampaignId[] = ['dex-profile', 'dex-boost', 'custom'];
  * Same-origin proxy for Bankr x402 space-fund. Browsers cannot send X-PAYMENT
  * cross-origin to x402.bankr.bot (CORS preflight fails on 402).
  *
- * After x402 verifies USDC payment, credit fundraising on bankr.space here
- * (uses Vercel X402_FUND_WEBHOOK_SECRET / KV) — not from x402 Cloud handler.
+ * After x402 verifies USDC payment and the space-fund handler returns 200,
+ * credit fundraising here (Vercel KV). The x402 Cloud handler intentionally does
+ * not fetch bankr.space — that fetch crashed Bun with "fetch() did not return a Response".
  */
 export async function POST(req: Request, { params }: RouteParams) {
   const { address } = await params;

@@ -5,12 +5,15 @@ Optional USDC contributions toward DexScreener or custom goals. **Posts stay fre
 ## Architecture
 
 ```text
-Donor → bankr.space Contribute (same-origin proxy)
+Donor → bankr.space Contribute (POST …/fundraising/x402 proxy)
      → x402.bankr.bot/{wallet}/space-fund?token=0x…&campaign=dex-profile&amount=1
-     → Bankr verifies USDC ($1/request) via EIP-3009 → settles on-chain
-     → space-fund handler POSTs to www.bankr.space/.../fundraising/credit
-     → KV updates raisedUsd → progress bar on space page
+     → Bankr verifies USDC ($1/request) via EIP-3009 → runs space-fund handler → settles
+     → space-fund handler returns 200 (no outbound fetch)
+     → bankr.space proxy credits KV via applyFundraisingCredit()
+     → progress bar updates on space page
 ```
+
+There is **no** `/space-fund` route on bankr.space. The handler lives in `x402/space-fund/index.ts` and deploys to **Bankr x402 Cloud** (`bankr x402 deploy`).
 
 **Important:** Do not use plain USDC `transfer()` to the beneficiary for fundraising — that bypasses x402 and will not appear in the x402 dashboard. Each Contribute click is one x402 request ($1 USDC).
 
@@ -35,7 +38,7 @@ bankr x402 env set X402_FUND_WEBHOOK_SECRET=$(openssl rand -hex 32)
 
 Use the **same** `X402_FUND_WEBHOOK_SECRET` on Vercel. Note: do **not** use `BANKR_*` env names on x402 Cloud — that prefix is reserved by Bankr.
 
-If Request Logs show `fetch() did not return a Response`, redeploy after setting `SPACE_SITE_URL=https://www.bankr.space` and matching secrets.
+If Request Logs show `fetch() did not return a Response`, redeploy the latest handler (it no longer calls `fetch` from x402 Cloud). Progress crediting is done by the bankr.space proxy after a successful x402 response.
 
 4. Deploy:
 
