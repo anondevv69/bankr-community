@@ -2,15 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { useAppWallet } from '@/hooks/useAppWallet';
-import type { BeneficiaryInfo, Community, SocialLinks, TokenMarketStats } from '@/lib/types';
-import { hasSocialLinks, socialLinksForDisplay } from '@/lib/social-links';
+import type {
+  BeneficiaryInfo,
+  Community,
+  CustomSocialLink,
+  SocialLinks,
+  StandardSocialLinkKey,
+  TokenMarketStats,
+} from '@/lib/types';
+import { getSocialLinkPills } from '@/lib/social-links';
 import { VerifiedBeneficiarySection } from '@/components/VerifiedBeneficiarySection';
 import { MarketStats } from '@/components/MarketStats';
 import { TokenAvatar } from '@/components/TokenAvatar';
 import { apiFetch } from '@/lib/wagmi';
 import { shortAddr } from '@/lib/utils';
 
-const SOCIAL_FIELDS: Array<{ key: keyof SocialLinks; label: string; placeholder: string }> = [
+const SOCIAL_FIELDS: Array<{ key: StandardSocialLinkKey; label: string; placeholder: string }> = [
   {
     key: 'x',
     label: 'Token X account',
@@ -26,28 +33,16 @@ const SOCIAL_FIELDS: Array<{ key: keyof SocialLinks; label: string; placeholder:
   { key: 'discord', label: 'Discord', placeholder: 'invite code or https://discord.gg/...' },
 ];
 
-const SOCIAL_PILLS: Array<{ key: keyof SocialLinks; label: string }> = [
-  { key: 'website', label: 'Website' },
-  { key: 'x', label: 'X' },
-  { key: 'telegram', label: 'Telegram' },
-];
+const EMPTY_CUSTOM_LINK: CustomSocialLink = { title: '', url: '' };
 
-function SocialPills({ links, dexUrl }: { links: ReturnType<typeof socialLinksForDisplay>; dexUrl?: string | null }) {
-  const items = SOCIAL_PILLS.filter(({ key }) => links[key]).map(({ key, label }) => ({
-    label,
-    href: links[key]!,
-  }));
-  if (dexUrl) {
-    items.push({ label: 'DexScreener', href: dexUrl });
-  }
-
-  if (!items.length) return null;
+function SocialPills({ pills }: { pills: ReturnType<typeof getSocialLinkPills> }) {
+  if (!pills.length) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
+    <div className="flex flex-wrap gap-2 mt-4">
+      {pills.map((item) => (
         <a
-          key={item.label}
+          key={`${item.label}-${item.href}`}
           href={item.href}
           target="_blank"
           rel="noreferrer"
@@ -81,7 +76,7 @@ export function CommunityProfile({
   const [useDexBanner, setUseDexBanner] = useState(community.useDexBanner ?? false);
   const [market, setMarket] = useState<TokenMarketStats | null>(null);
 
-  const displayLinks = socialLinksForDisplay(community.socialLinks);
+  const linkPills = getSocialLinkPills(community.socialLinks, market?.dexUrl);
   const dexBannerAvailable = !!market?.bannerUrl;
   const previewBanner = customBannerUrl.trim()
     ? customBannerUrl.trim()
@@ -138,6 +133,28 @@ export function CommunityProfile({
     navigator.clipboard.writeText(community.tokenAddress);
   }
 
+  function addCustomLink() {
+    setSocialLinks((current) => ({
+      ...current,
+      custom: [...(current.custom || []), { ...EMPTY_CUSTOM_LINK }],
+    }));
+  }
+
+  function updateCustomLink(index: number, patch: Partial<CustomSocialLink>) {
+    setSocialLinks((current) => {
+      const custom = [...(current.custom || [])];
+      custom[index] = { ...custom[index], ...patch };
+      return { ...current, custom };
+    });
+  }
+
+  function removeCustomLink(index: number) {
+    setSocialLinks((current) => ({
+      ...current,
+      custom: (current.custom || []).filter((_, i) => i !== index),
+    }));
+  }
+
   return (
     <div className="mb-6">
       {community.bannerUrl && !editing ? (
@@ -192,8 +209,8 @@ export function CommunityProfile({
 
           <MarketStats market={market} variant="hero" />
 
-          {!editing && hasSocialLinks(community.socialLinks) ? (
-            <SocialPills links={displayLinks} dexUrl={market?.dexUrl} />
+          {!editing && linkPills.length > 0 ? (
+            <SocialPills pills={linkPills} />
           ) : null}
 
           {editing ? (
@@ -227,6 +244,61 @@ export function CommunityProfile({
                     />
                   </div>
                 ))}
+              </div>
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm font-medium">Additional links</div>
+                  <button
+                    type="button"
+                    onClick={addCustomLink}
+                    className="px-3 py-1.5 text-xs border border-border rounded-lg hover:border-accent bg-surface-2"
+                  >
+                    + Add link
+                  </button>
+                </div>
+                <p className="text-xs text-muted">
+                  Any title and URL — Bankr App, Agent skill, docs, etc.
+                </p>
+                {(socialLinks.custom || []).length === 0 ? (
+                  <p className="text-xs text-muted italic">No extra links yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(socialLinks.custom || []).map((link, index) => (
+                      <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1.4fr_auto] items-end">
+                        <div>
+                          <label className="block text-xs text-muted mb-1">Title</label>
+                          <input
+                            className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm"
+                            placeholder="Bankr App"
+                            maxLength={40}
+                            value={link.title}
+                            onChange={(event) =>
+                              updateCustomLink(index, { title: event.target.value })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted mb-1">URL</label>
+                          <input
+                            className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm"
+                            placeholder="https://…"
+                            value={link.url}
+                            onChange={(event) =>
+                              updateCustomLink(index, { url: event.target.value })
+                            }
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomLink(index)}
+                          className="px-3 py-2 text-xs text-red-400 border border-border rounded-lg hover:border-red-400/50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="border-t border-border pt-4 space-y-3">
                 <div className="text-sm font-medium">Banner</div>

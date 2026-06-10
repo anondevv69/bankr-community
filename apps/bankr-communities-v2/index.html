@@ -1107,7 +1107,7 @@
   </div>
 
   <footer>
-    made with love &lt;3 rayblanco.eth · Bankr Space · v23 · <a href="https://bankr.bot/u/0x374d91a5674fa7cf86e725093b5848b97e1e13b4/apps/bankr-communities-v2" onclick="openBankrApp(event)">Bankr App</a>
+    made with love &lt;3 rayblanco.eth · Bankr Space · v24 · <a href="https://bankr.bot/u/0x374d91a5674fa7cf86e725093b5848b97e1e13b4/apps/bankr-communities-v2" onclick="openBankrApp(event)">Bankr App</a>
   </footer>
 
   <div class="modal-overlay" id="createSearchModal" onclick="closeCreateSearchModal()">
@@ -1886,7 +1886,16 @@
       const items = [];
       if (links.website) items.push({ label: 'Website', href: links.website });
       if (links.x) items.push({ label: 'X', href: links.x });
+      if (links.github) items.push({ label: 'GitHub', href: links.github });
       if (links.telegram) items.push({ label: 'Telegram', href: links.telegram });
+      if (links.discord) items.push({ label: 'Discord', href: links.discord });
+      if (Array.isArray(links.custom)) {
+        links.custom.forEach(function (entry) {
+          if (entry && entry.title && entry.url) {
+            items.push({ label: String(entry.title), href: String(entry.url) });
+          }
+        });
+      }
       if (market && market.dexUrl) items.push({ label: 'DexScreener', href: market.dexUrl });
       if (!items.length) {
         el.innerHTML = '';

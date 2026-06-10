@@ -58,7 +58,7 @@ Use: `canEditProfile`, `canPinPosts`, `canPost`, `isBeneficiary`.
 @bankrbot add these links to TMP token info: x @MyToken github myorg/repo
 ```
 
-**Editable fields:** `description`, `socialLinks.x`, `socialLinks.website`, `socialLinks.github`, `socialLinks.telegram`, `socialLinks.discord`, `customBannerUrl` (https or ipfs://), `useDexBanner` (boolean — pull DexScreener header when true and no custom URL)
+**Editable fields:** `description`, `socialLinks` (standard: `x`, `website`, `github`, `telegram`, `discord`; plus `custom[]` with `{ title, url }` for any extra links), `customBannerUrl`, `useDexBanner`
 
 **NOT editable via API:** beneficiary wallet (from Bankr launch data).
 
@@ -80,8 +80,10 @@ Use: `canEditProfile`, `canPinPosts`, `canPost`, `isBeneficiary`.
   "socialLinks": {
     "website": "https://tokenmarketplace.shop",
     "x": "https://x.com/MyToken",
-    "telegram": "https://t.me/mytoken",
-    "discord": "https://discord.gg/mytoken"
+    "custom": [
+      { "title": "Bankr App", "url": "https://bankr.bot/u/…/apps/bankr-communities-v2" },
+      { "title": "Agent skill", "url": "https://www.bankr.space/skill" }
+    ]
   }
 }
 ```

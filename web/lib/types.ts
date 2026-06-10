@@ -5,6 +5,13 @@ export interface Author {
   profileImage: string | null;
 }
 
+export interface CustomSocialLink {
+  title: string;
+  url: string;
+}
+
+export type StandardSocialLinkKey = 'x' | 'website' | 'github' | 'telegram' | 'discord';
+
 export interface SocialLinks {
   /** Token/community X account — separate from beneficiary personal X on Bankr */
   x?: string;
@@ -12,6 +19,8 @@ export interface SocialLinks {
   github?: string;
   telegram?: string;
   discord?: string;
+  /** Additional labeled links (title + URL) beyond the standard fields */
+  custom?: CustomSocialLink[];
 }
 
 export interface BeneficiaryInfo {
