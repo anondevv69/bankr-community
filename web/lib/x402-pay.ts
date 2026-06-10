@@ -78,14 +78,21 @@ export async function paySpaceFund(
 ): Promise<PayResult> {
   const { status, data } = await proxyX402(tokenAddress, campaignId, amountUsd);
 
-  if (status !== 402) {
+  const body = data as {
+    requiresPayment?: boolean;
+    x402Version?: number;
+    accepts?: unknown[];
+    error?: string;
+  };
+
+  const isQuote = status === 402 || (status === 200 && body.requiresPayment);
+  if (!isQuote) {
     if (status >= 400) {
       throw new Error(formatPayError(data, status));
     }
     return data as PayResult;
   }
 
-  const body = data as { x402Version?: number; accepts?: unknown[] };
   const { x402Version, accepts } = body;
   if (!Array.isArray(accepts) || accepts.length === 0) {
     throw new Error('No payment options returned by x402 endpoint');

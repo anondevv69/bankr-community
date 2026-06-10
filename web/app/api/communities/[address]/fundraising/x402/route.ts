@@ -43,7 +43,23 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   try {
     const upstream = await fetch(fundUrl, { headers, cache: 'no-store' });
-    const data = await upstream.json().catch(() => ({}));
+    const text = await upstream.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+    } catch {
+      data = { error: text.slice(0, 200) || 'Non-JSON response from x402' };
+    }
+
+    // Quote step: return 200 so the browser does not log a red 402 on every Contribute click.
+    if (!xPayment && upstream.status === 402) {
+      return NextResponse.json({ requiresPayment: true, ...data }, { status: 200 });
+    }
+
+    if (upstream.status >= 400) {
+      console.error('x402 upstream error', upstream.status, data);
+    }
+
     return NextResponse.json(data, { status: upstream.status });
   } catch (err) {
     console.error('x402 proxy', err);

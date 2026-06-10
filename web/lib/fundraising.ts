@@ -93,6 +93,15 @@ function clampRaised(value: unknown): number {
   return Math.round(n * 100) / 100;
 }
 
+/** Read fundraising as stored in KV — no display-only optedIn mask. */
+export function readStoredFundraising(input: unknown): FundraisingState {
+  const raw = input && typeof input === 'object' ? (input as FundraisingState) : null;
+  return {
+    optedIn: Boolean(raw?.optedIn),
+    campaigns: mergeCampaigns(raw),
+  };
+}
+
 export function activeCampaigns(state: FundraisingState | undefined | null): FundraisingCampaign[] {
   if (!state?.optedIn) return [];
   return state.campaigns.filter((c) => c.enabled);

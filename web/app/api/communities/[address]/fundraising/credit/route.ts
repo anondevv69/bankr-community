@@ -4,6 +4,7 @@ import { mergeCommunityDefaults } from '@/lib/community-posts';
 import {
   CAMPAIGN_IDS,
   creditCampaignUsd,
+  readStoredFundraising,
   type CampaignId,
 } from '@/lib/fundraising';
 import { normalizeAddr } from '@/lib/utils';
@@ -51,15 +52,21 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
-    const current = mergeCommunityDefaults(communities[index]);
-    const campaign = current.fundraising!.campaigns.find((c) => c.id === campaignId);
-    if (!current.fundraising?.optedIn || !campaign?.enabled) {
-      return NextResponse.json({ error: 'Campaign is not enabled for this space' }, { status: 400 });
+    const stored = readStoredFundraising(communities[index].fundraising);
+    const campaign = stored.campaigns.find((c) => c.id === campaignId);
+    if (!campaign?.enabled) {
+      return NextResponse.json(
+        {
+          error:
+            'Campaign is not enabled for this space. Beneficiary must enable fundraising in Edit profile.',
+        },
+        { status: 400 }
+      );
     }
 
-    const nextFundraising = creditCampaignUsd(current.fundraising!, campaignId, amountUsd);
+    const nextFundraising = creditCampaignUsd(stored, campaignId, amountUsd);
     const updated = mergeCommunityDefaults({
-      ...current,
+      ...mergeCommunityDefaults(communities[index]),
       fundraising: nextFundraising,
     });
 
