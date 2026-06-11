@@ -4,21 +4,29 @@ import { mergeCommunityDefaults } from '@/lib/community-posts';
 import { migrateLegacyPoidhAgentPool } from '@/lib/agent-pool-legacy-poidh';
 import {
   bountyPublicUrl,
+  bountyDescriptionForDisplay,
   POIDH_BOUNTY_GUIDE_URL,
+  pendingPoidhBounties,
 } from '@/lib/poidh-community-bounties';
+import {
+  poidhSpinUpSummary,
+  spinUpPoidhBountiesForCommunity,
+} from '@/lib/poidh-bounty-spinup';
 import { fetchPoidhBountyById } from '@/lib/poidh-api';
 import { normalizeAddr } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 type RouteParams = { params: Promise<{ address: string }> };
 
-export async function GET(_req: Request, { params }: RouteParams) {
+export async function GET(req: Request, { params }: RouteParams) {
   const { address } = await params;
   const tokenAddress = normalizeAddr(address);
+  const trySpinUp = new URL(req.url).searchParams.get('spinUp') === '1';
 
   try {
-    const community = await getCommunity(tokenAddress);
+    let community = await getCommunity(tokenAddress);
     if (!community) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
@@ -33,9 +41,20 @@ export async function GET(_req: Request, { params }: RouteParams) {
         communities[idx] = migrated.community;
         await setCommunities(communities);
       }
+      community = migrated.community;
     }
-    const merged = mergeCommunityDefaults(migrated.community);
+
+    let merged = mergeCommunityDefaults(community);
+    const hasPending = pendingPoidhBounties(merged.poidhBounties).length > 0;
+
+    if (trySpinUp && hasPending && !merged.poidhBounties?.bankrAgentJobId) {
+      await spinUpPoidhBountiesForCommunity(merged, { maxBounties: 1 });
+      const refreshed = await getCommunity(tokenAddress);
+      if (refreshed) merged = mergeCommunityDefaults(refreshed);
+    }
+
     const state = merged.poidhBounties;
+    const spinUp = poidhSpinUpSummary(state);
 
     const bounties = await Promise.all(
       (state?.bounties ?? []).map(async (b) => {
@@ -44,12 +63,13 @@ export async function GET(_req: Request, { params }: RouteParams) {
           const onChain = await fetchPoidhBountyById(b.poidhBountyId).catch(() => null);
           amountWei = onChain?.amountWei.toString() ?? null;
         }
+        const live = b.poidhBountyId != null;
         return {
           id: b.id,
           kind: b.kind,
           title: b.title,
-          description: b.description,
-          status: b.poidhBountyId != null ? 'live' : b.status,
+          description: bountyDescriptionForDisplay(b.description),
+          status: live ? 'live' : 'pending',
           poidhBountyId: b.poidhBountyId,
           url: bountyPublicUrl(b),
           amountWei,
@@ -64,7 +84,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
       total: bounties.length,
       symbol: merged.symbol,
       enabled: state?.enabled !== false,
-      pendingSpinUp: Boolean(state?.spinUpAt || state?.bankrAgentJobId),
+      spinUp,
       links: {
         poidh: 'https://poidh.xyz/base',
         openBountyGuide: POIDH_BOUNTY_GUIDE_URL,

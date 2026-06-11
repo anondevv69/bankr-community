@@ -3,9 +3,11 @@ import { getCommunities, setCommunities } from '@/lib/db';
 import { mergeCommunityDefaults } from '@/lib/community-posts';
 import { resolveSpacePermissions } from '@/lib/community-owner';
 import { createCommunityPoidhBounty } from '@/lib/poidh-community-bounties';
+import { spinUpPoidhBountiesForCommunity } from '@/lib/poidh-bounty-spinup';
 import { normalizeAddr } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 type RouteParams = { params: Promise<{ address: string }> };
 
@@ -61,24 +63,39 @@ export async function POST(req: Request, { params }: RouteParams) {
       requestedBy: wallet,
     });
 
-    communities[index] = mergeCommunityDefaults({
+    const saved = mergeCommunityDefaults({
       ...current,
       poidhBounties: {
         ...state,
         bounties: [...state.bounties, bounty],
-        spinUpAt: state.spinUpAt ?? Date.now(),
+        spinUpAt: Date.now(),
       },
     });
+    communities[index] = saved;
     await setCommunities(communities);
+
+    const spin = await spinUpPoidhBountiesForCommunity(saved, { maxBounties: 1 }).catch(
+      (err) => ({
+        status: 'failed',
+        message: err instanceof Error ? err.message : String(err),
+        linked: 0,
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'Bounty created — it will appear on POIDH shortly.',
+      message:
+        spin.status === 'live'
+          ? 'Bounty is live on POIDH — add funds and share the task.'
+          : spin.status === 'pending_job'
+            ? 'Bounty queued — Bankr agent is opening it on POIDH now.'
+            : 'Bounty saved — Bankr agent will open it on POIDH shortly.',
       bounty: {
         id: bounty.id,
         title: bounty.title,
-        status: 'pending',
+        status: spin.status === 'live' ? 'live' : 'pending',
       },
+      spinUp: spin,
     });
   } catch (err) {
     console.error('POST poidh/request', err);

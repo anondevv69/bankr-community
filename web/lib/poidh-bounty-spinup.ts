@@ -1,4 +1,4 @@
-import { getCommunities, setCommunities } from '@/lib/db';
+import { getCommunities, getCommunity, setCommunities } from '@/lib/db';
 import { mergeCommunityDefaults } from '@/lib/community-posts';
 import {
   buildPoidhSpinUpPrompt,
@@ -65,13 +65,10 @@ async function linkFromOnChain(community: Community): Promise<number> {
   let linked = 0;
   const bounties = state.bounties.map((b) => {
     if (b.poidhBountyId != null) return b;
-    const hay = `${b.title} ${b.description}`.toLowerCase();
+    const titleHay = b.title.toLowerCase().slice(0, 32);
     const match = onChain.bounties.find((ob) => {
       const obHay = `${ob.name} ${ob.description}`.toLowerCase();
-      return (
-        obHay.includes(b.title.toLowerCase().slice(0, 24)) ||
-        hay.includes(community.symbol.toLowerCase().replace(/^\$/, ''))
-      );
+      return titleHay.length >= 8 && obHay.includes(titleHay);
     });
     if (match) {
       linked += 1;
@@ -86,12 +83,17 @@ async function linkFromOnChain(community: Community): Promise<number> {
   });
 
   if (linked > 0) {
-    await savePoidhState(community.tokenAddress, { ...state, bounties, spinUpAt: null });
+    const stillPending = bounties.some((b) => b.poidhBountyId == null && b.status === 'pending');
+    await savePoidhState(community.tokenAddress, {
+      ...state,
+      bounties,
+      spinUpAt: stillPending ? state.spinUpAt ?? Date.now() : null,
+    });
   }
   return linked;
 }
 
-export async function spinUpPoidhBountiesForCommunity(
+async function spinUpNextPoidhBounty(
   community: Community
 ): Promise<{ status: string; message?: string; linked?: number }> {
   const merged = mergeCommunityDefaults(community);
@@ -110,6 +112,7 @@ export async function spinUpPoidhBountiesForCommunity(
     return { status: 'pending_api_key', message: 'PLATFORM_AGENT_BANKR_API_KEY not set' };
   }
 
+  const batch = pending.slice(0, 1);
   let jobId = state.bankrAgentJobId?.trim() || null;
   let resultText = '';
 
@@ -118,7 +121,7 @@ export async function spinUpPoidhBountiesForCommunity(
       const prompt = buildPoidhSpinUpPrompt({
         symbol: merged.symbol,
         tokenAddress: merged.tokenAddress,
-        bounties: pending,
+        bounties: batch,
       });
       jobId = await submitBankrAgentPrompt(prompt);
       await savePoidhState(merged.tokenAddress, { ...state, bankrAgentJobId: jobId });
@@ -126,11 +129,6 @@ export async function spinUpPoidhBountiesForCommunity(
 
     const polled = await pollBankrAgentJob(jobId, { maxAttempts: 90, delayMs: 2000 });
     resultText = polled.text;
-    await savePoidhState(merged.tokenAddress, {
-      ...state,
-      bankrAgentJobId: null,
-      spinUpAt: null,
-    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('timed out')) {
@@ -155,10 +153,10 @@ export async function spinUpPoidhBountiesForCommunity(
 
   const bounties = currentState.bounties.map((b) => {
     let onChainId: number | null = links[b.id] ?? null;
-    if (onChainId == null && pending.some((p) => p.id === b.id)) {
+    if (onChainId == null && batch.some((p) => p.id === b.id)) {
       onChainId = extractPoidhBountyId(resultText);
     }
-    if (onChainId != null && b.poidhBountyId == null && pending.some((p) => p.id === b.id)) {
+    if (onChainId != null && b.poidhBountyId == null && batch.some((p) => p.id === b.id)) {
       linked += 1;
       return {
         ...b,
@@ -170,18 +168,20 @@ export async function spinUpPoidhBountiesForCommunity(
     return b;
   });
 
+  const stillPending = bounties.some((b) => b.poidhBountyId == null && b.status === 'pending');
+
   communities[idx] = mergeCommunityDefaults({
     ...current,
     poidhBounties: {
       ...currentState,
       bounties,
-      spinUpAt: linked >= pending.length ? null : currentState.spinUpAt,
+      spinUpAt: stillPending ? currentState.spinUpAt ?? Date.now() : null,
       bankrAgentJobId: null,
     },
   });
   await setCommunities(communities);
 
-  if (linked < pending.length) {
+  if (linked < batch.length) {
     linked += await linkFromOnChain(communities[idx]);
   }
 
@@ -194,8 +194,8 @@ export async function spinUpPoidhBountiesForCommunity(
     await createPlatformAgentPost(
       merged.tokenAddress,
       [
-        `$${merged.symbol} — POIDH open bounties live`,
-        'Community can add funds, complete tasks, and vote on proof.',
+        `$${merged.symbol} — POIDH open bounty live: ${batch[0].title}`,
+        'Add funds on POIDH, complete the task, post proof here, then submit on poidh.xyz.',
         ...lines.map((u) => `Bounty: ${u}`),
         communityUrl(merged.tokenAddress),
       ].join('\n')
@@ -207,6 +207,43 @@ export async function spinUpPoidhBountiesForCommunity(
     message: txHash ? `tx ${txHash.slice(0, 10)}…` : resultText.slice(0, 120),
     linked,
   };
+}
+
+export async function spinUpPoidhBountiesForCommunity(
+  community: Community,
+  options?: { maxBounties?: number }
+): Promise<{ status: string; message?: string; linked?: number }> {
+  const maxBounties = options?.maxBounties ?? 2;
+  let merged = mergeCommunityDefaults(community);
+  let totalLinked = 0;
+  let last: { status: string; message?: string; linked?: number } = {
+    status: 'skipped',
+    linked: 0,
+  };
+
+  for (let i = 0; i < maxBounties; i++) {
+    const pending = pendingPoidhBounties(merged.poidhBounties);
+    if (!pending.length && !merged.poidhBounties?.bankrAgentJobId) break;
+
+    last = await spinUpNextPoidhBounty(merged);
+    totalLinked += last.linked ?? 0;
+
+    if (
+      last.status === 'pending_job' ||
+      last.status === 'failed' ||
+      last.status === 'pending_api_key'
+    ) {
+      break;
+    }
+
+    const fresh = await getCommunity(merged.tokenAddress);
+    if (!fresh) break;
+    merged = mergeCommunityDefaults(fresh);
+
+    if (!pendingPoidhBounties(merged.poidhBounties).length) break;
+  }
+
+  return { ...last, linked: totalLinked };
 }
 
 export async function spinUpAllPoidhBounties(): Promise<PoidhSpinUpResult> {
@@ -221,12 +258,16 @@ export async function spinUpAllPoidhBounties(): Promise<PoidhSpinUpResult> {
   for (const raw of communities) {
     const merged = mergeCommunityDefaults(raw);
     if (!merged.poidhBounties?.enabled) continue;
-    if (!pendingPoidhBounties(merged.poidhBounties).length && !merged.poidhBounties.spinUpAt) {
+    if (
+      !pendingPoidhBounties(merged.poidhBounties).length &&
+      !merged.poidhBounties.spinUpAt &&
+      !merged.poidhBounties.bankrAgentJobId
+    ) {
       continue;
     }
 
     spacesProcessed += 1;
-    const result = await spinUpPoidhBountiesForCommunity(merged);
+    const result = await spinUpPoidhBountiesForCommunity(merged, { maxBounties: 3 });
     items.push({
       tokenAddress: merged.tokenAddress,
       symbol: merged.symbol,
@@ -247,4 +288,30 @@ export async function spinUpAllPoidhBounties(): Promise<PoidhSpinUpResult> {
     failed,
     items,
   };
+}
+
+export function poidhSpinUpSummary(state: PoidhBountyState | undefined | null): {
+  configured: boolean;
+  pendingCount: number;
+  agentJobRunning: boolean;
+  message: string | null;
+} {
+  const configured = Boolean(getPlatformAgentBankrApiKey());
+  const pendingCount = pendingPoidhBounties(state).length;
+  const agentJobRunning = Boolean(state?.bankrAgentJobId?.trim());
+
+  let message: string | null = null;
+  if (pendingCount === 0) {
+    message = null;
+  } else if (!configured) {
+    message =
+      'Platform agent is not configured — bounties will open once the operator adds the Bankr API key.';
+  } else if (agentJobRunning) {
+    message = 'Bankr agent is creating this bounty on POIDH right now — usually 1–3 minutes.';
+  } else {
+    message =
+      'Bankr agent opens each bounty on POIDH (seeds a small ETH pool). Then anyone can add funds, do the task, and vote on proof.';
+  }
+
+  return { configured, pendingCount, agentJobRunning, message };
 }

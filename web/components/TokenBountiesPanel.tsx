@@ -17,6 +17,13 @@ type BountyView = {
   requestedBy: string | null;
 };
 
+type SpinUpView = {
+  configured: boolean;
+  pendingCount: number;
+  agentJobRunning: boolean;
+  message: string | null;
+};
+
 function formatEth(wei: string | null): string | null {
   if (!wei) return null;
   try {
@@ -33,6 +40,17 @@ function truncateAddress(addr: string | null): string | null {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function pendingLabel(bounty: BountyView, spinUp: SpinUpView | null): string {
+  if (bounty.status === 'live') return 'Live on POIDH';
+  if (spinUp?.agentJobRunning) return 'Opening on POIDH…';
+  return 'Opening on POIDH';
+}
+
+function pendingHint(spinUp: SpinUpView | null): string {
+  if (spinUp?.message) return spinUp.message;
+  return 'The Bankr agent creates an open bounty on poidh.xyz (small ETH seed). This page refreshes automatically — usually 1–5 minutes per bounty.';
+}
+
 export function TokenBountiesPanel({
   tokenAddress,
   symbol,
@@ -40,35 +58,50 @@ export function TokenBountiesPanel({
 }: {
   tokenAddress: string;
   symbol: string;
-  /** Holder can create custom bounties */
   canCreate?: boolean;
 }) {
   const { address, isEmbedded, connectWallet } = useAppWallet();
   const [bounties, setBounties] = useState<BountyView[]>([]);
+  const [spinUp, setSpinUp] = useState<SpinUpView | null>(null);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/communities/${tokenAddress}/poidh`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load');
-      setBounties(data.bounties || []);
-    } catch (err) {
-      setHint(err instanceof Error ? err.message : 'Failed to load bounties');
-      setBounties([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [tokenAddress]);
+  const load = useCallback(
+    async (options?: { triggerSpinUp?: boolean }) => {
+      try {
+        const qs = options?.triggerSpinUp ? '?spinUp=1' : '';
+        const res = await fetch(`/api/communities/${tokenAddress}/poidh${qs}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load');
+        setBounties(data.bounties || []);
+        setSpinUp(data.spinUp || null);
+      } catch (err) {
+        setHint(err instanceof Error ? err.message : 'Failed to load bounties');
+        setBounties([]);
+        setSpinUp(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [tokenAddress]
+  );
 
   useEffect(() => {
-    void load();
+    void load({ triggerSpinUp: true });
   }, [load]);
+
+  const hasPending = bounties.some((b) => b.status !== 'live');
+
+  useEffect(() => {
+    if (!hasPending) return;
+    const id = window.setInterval(() => {
+      void load({ triggerSpinUp: true });
+    }, 20_000);
+    return () => window.clearInterval(id);
+  }, [hasPending, load]);
 
   async function submitCreate() {
     if (!address) {
@@ -84,7 +117,7 @@ export function TokenBountiesPanel({
     setSubmitting(true);
     setHint(null);
     try {
-      await apiFetch(`/api/communities/${tokenAddress}/poidh/request`, {
+      const data = await apiFetch(`/api/communities/${tokenAddress}/poidh/request`, {
         method: 'POST',
         wallet: address,
         client: isEmbedded ? 'bankr-app' : 'web',
@@ -92,8 +125,8 @@ export function TokenBountiesPanel({
       });
       setTitle('');
       setDescription('');
-      setHint('Bounty created — it will go live on POIDH in a few minutes.');
-      await load();
+      setHint(data.message || 'Bounty created.');
+      await load({ triggerSpinUp: true });
     } catch (err) {
       setHint(err instanceof Error ? err.message : 'Could not create bounty');
     } finally {
@@ -114,7 +147,7 @@ export function TokenBountiesPanel({
       <div className="p-4 rounded-xl border border-border bg-surface space-y-2">
         <div className="text-sm font-semibold">Community bounties for ${symbol}</div>
         <p className="text-[11px] text-muted leading-relaxed">
-          Anyone holding ${symbol} can create a custom open bounty. Funding happens on{' '}
+          Create a task → Bankr agent opens it on{' '}
           <a
             href="https://poidh.xyz/base"
             target="_blank"
@@ -123,9 +156,9 @@ export function TokenBountiesPanel({
           >
             POIDH
           </a>{' '}
-          in ETH — add funds to grow the pool. Complete a task,{' '}
-          <strong className="font-medium text-text">post proof in this community</strong>, then
-          submit on POIDH. Contributors vote 48h to release payment.
+          → community adds ETH → do the work →{' '}
+          <strong className="font-medium text-text">post proof here</strong> → submit on POIDH →
+          contributors vote 48h to pay out.
         </p>
       </div>
 
@@ -155,7 +188,7 @@ export function TokenBountiesPanel({
             onClick={() => void submitCreate()}
             className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-lg disabled:opacity-50"
           >
-            {submitting ? 'Creating…' : address ? 'Create bounty' : 'Connect to create'}
+            {submitting ? 'Creating on POIDH…' : address ? 'Create bounty' : 'Connect to create'}
           </button>
         </div>
       ) : (
@@ -163,6 +196,10 @@ export function TokenBountiesPanel({
           Connect and hold ${symbol} to create bounties.
         </p>
       )}
+
+      {hasPending && spinUp ? (
+        <p className="text-[11px] text-muted px-1 leading-relaxed">{pendingHint(spinUp)}</p>
+      ) : null}
 
       {bounties.length ? (
         <div className="space-y-3">
@@ -183,7 +220,7 @@ export function TokenBountiesPanel({
                           : 'bg-surface-2 text-muted'
                       }`}
                     >
-                      {bounty.status === 'live' ? 'Live on POIDH' : 'Starting soon'}
+                      {pendingLabel(bounty, spinUp)}
                     </span>
                   </div>
                   {bounty.requestedBy ? (
@@ -191,9 +228,9 @@ export function TokenBountiesPanel({
                       Created by {truncateAddress(bounty.requestedBy)}
                     </p>
                   ) : null}
-                  <p className="text-xs text-muted mt-1 whitespace-pre-wrap line-clamp-4">
-                    {bounty.description}
-                  </p>
+                  {bounty.description ? (
+                    <p className="text-xs text-muted mt-1 whitespace-pre-wrap">{bounty.description}</p>
+                  ) : null}
                 </div>
                 {formatEth(bounty.amountWei) ? (
                   <div className="text-sm font-semibold tabular-nums shrink-0">
@@ -221,9 +258,7 @@ export function TokenBountiesPanel({
                   </a>
                 </div>
               ) : (
-                <p className="text-[11px] text-muted">
-                  Open bounty is being created on POIDH — refresh in a few minutes.
-                </p>
+                <p className="text-[11px] text-muted">{pendingHint(spinUp)}</p>
               )}
             </div>
           ))}
