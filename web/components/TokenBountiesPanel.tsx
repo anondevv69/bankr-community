@@ -23,6 +23,7 @@ type SpinUpView = {
   pendingCount: number;
   agentJobRunning: boolean;
   message: string | null;
+  lastError?: string | null;
 };
 
 function formatEth(wei: string | null): string | null {
@@ -50,6 +51,11 @@ function pendingLabel(bounty: BountyView, spinUp: SpinUpView | null): string {
 function pendingHint(spinUp: SpinUpView | null): string {
   if (spinUp?.message) return spinUp.message;
   return 'The issuer wallet creates an open bounty on Base (0.001 ETH seed). This page refreshes automatically.';
+}
+
+function pendingHintClass(spinUp: SpinUpView | null): string {
+  if (spinUp?.lastError) return 'text-red-600 dark:text-red-400';
+  return 'text-muted';
 }
 
 export function TokenBountiesPanel({
@@ -191,7 +197,9 @@ export function TokenBountiesPanel({
       )}
 
       {hasPending && spinUp ? (
-        <p className="text-[11px] text-muted px-1 leading-relaxed">{pendingHint(spinUp)}</p>
+        <p className={`text-[11px] px-1 leading-relaxed ${pendingHintClass(spinUp)}`}>
+          {pendingHint(spinUp)}
+        </p>
       ) : null}
 
       {bounties.length ? (
@@ -239,7 +247,9 @@ export function TokenBountiesPanel({
                   onAction={() => void load()}
                 />
               ) : (
-                <p className="text-[11px] text-muted">{pendingHint(spinUp)}</p>
+                <p className={`text-[11px] leading-relaxed ${pendingHintClass(spinUp)}`}>
+                  {pendingHint(spinUp)}
+                </p>
               )}
             </div>
           ))}

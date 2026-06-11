@@ -17,7 +17,7 @@ import {
 const DEFAULT_SEED_ETH = '0.001';
 
 function normalizePrivateKey(raw: string): Hex | null {
-  const trimmed = raw.trim();
+  const trimmed = raw.trim().replace(/^["']|["']$/g, '');
   if (!trimmed) return null;
   const hex = trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`;
   if (!/^0x[0-9a-fA-F]{64}$/.test(hex)) return null;
@@ -45,7 +45,10 @@ export function getPoidhIssuerWallet(): Address | null {
 }
 
 export function isPoidhIssuerConfigured(): boolean {
-  return getPoidhIssuerPrivateKey() != null && getPoidhIssuerWallet() != null;
+  const key = getPoidhIssuerPrivateKey();
+  const wallet = getPoidhIssuerWallet();
+  if (!key || !wallet) return false;
+  return privateKeyToAccount(key).address.toLowerCase() === wallet.toLowerCase();
 }
 
 function issuerWalletClient() {
@@ -112,7 +115,8 @@ async function resolveBountyIdAfterCreate(
     abi: poidhV3Abi,
     functionName: 'bountyCounter',
   });
-  const id = Number(counter);
+  // bountyCounter is the *next* id; the bounty we just created is counter - 1.
+  const id = Number(counter) - 1;
   if (id > 0) {
     const row = await poidhPublicClient.readContract({
       address: POIDH_V3_BASE,

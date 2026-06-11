@@ -80,12 +80,16 @@ async function linkFromOnChain(community: Community): Promise<number> {
   });
 
   if (linked > 0) {
-    const stillPending = bounties.some((b) => b.poidhBountyId == null && b.status === 'pending');
+    const stillPending = bounties.some(
+      (b) => b.poidhBountyId == null && b.status !== 'completed'
+    );
     await savePoidhState(community.tokenAddress, {
       ...state,
       bounties,
       spinUpAt: stillPending ? state.spinUpAt ?? Date.now() : null,
       bankrAgentJobId: null,
+      lastSpinUpError: null,
+      lastSpinUpAt: null,
     });
   }
   return linked;
@@ -128,6 +132,11 @@ async function spinUpNextPoidhBounty(
   const target = batch[0];
 
   try {
+    await savePoidhState(merged.tokenAddress, {
+      ...state,
+      bankrAgentJobId: null,
+    });
+
     const { bountyId, txHash } = await openBountyOnChain(merged, target);
 
     const communities = await getCommunities();
@@ -151,7 +160,9 @@ async function spinUpNextPoidhBounty(
       };
     });
 
-    const stillPending = bounties.some((b) => b.poidhBountyId == null && b.status === 'pending');
+    const stillPending = bounties.some(
+      (b) => b.poidhBountyId == null && b.status !== 'completed'
+    );
 
     communities[idx] = mergeCommunityDefaults({
       ...current,
@@ -160,6 +171,8 @@ async function spinUpNextPoidhBounty(
         bounties,
         spinUpAt: stillPending ? currentState.spinUpAt ?? Date.now() : null,
         bankrAgentJobId: null,
+        lastSpinUpError: null,
+        lastSpinUpAt: null,
       },
     });
     await setCommunities(communities);
@@ -183,6 +196,13 @@ async function spinUpNextPoidhBounty(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error('poidh spin-up failed', merged.tokenAddress, message);
+    await savePoidhState(merged.tokenAddress, {
+      ...state,
+      bankrAgentJobId: null,
+      lastSpinUpError: message.slice(0, 500),
+      lastSpinUpAt: Date.now(),
+    }).catch(() => undefined);
     return { status: 'failed', message };
   }
 }
@@ -268,21 +288,25 @@ export function poidhSpinUpSummary(state: PoidhBountyState | undefined | null): 
   pendingCount: number;
   agentJobRunning: boolean;
   message: string | null;
+  lastError: string | null;
 } {
   const configured = isPoidhIssuerConfigured();
   const pendingCount = pendingPoidhBounties(state).length;
-  const agentJobRunning = pendingCount > 0 && configured;
+  const lastError = state?.lastSpinUpError?.trim() || null;
+  const agentJobRunning = pendingCount > 0 && configured && !lastError;
 
   let message: string | null = null;
   if (pendingCount === 0) {
     message = null;
   } else if (!configured) {
     message =
-      'POIDH issuer wallet is not configured — bounties will open once POIDH_ISSUER_PRIVATE_KEY is set.';
+      'POIDH issuer wallet is not configured — set POIDH_ISSUER_PRIVATE_KEY and POIDH_ISSUER_WALLET (must match) on Vercel.';
+  } else if (lastError) {
+    message = `Could not open on-chain: ${lastError}`;
   } else {
     message =
       'Opening bounty on-chain (seeds 0.001 ETH from issuer wallet). Usually completes in under a minute.';
   }
 
-  return { configured, pendingCount, agentJobRunning, message };
+  return { configured, pendingCount, agentJobRunning, message, lastError };
 }

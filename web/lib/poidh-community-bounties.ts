@@ -37,13 +37,20 @@ function normalizeOneBounty(item: unknown): PoidhCommunityBounty | null {
     ? (b.kind as PoidhBountyKind)
     : 'community';
 
+  const onChainId = b.poidhBountyId != null ? Number(b.poidhBountyId) : null;
+
   return {
     id,
     kind,
     title: String(b.title || 'Community bounty').slice(0, 120),
     description: String(b.description || '').slice(0, 4000),
-    poidhBountyId: b.poidhBountyId != null ? Number(b.poidhBountyId) : null,
-    status: b.status === 'live' || b.status === 'completed' ? b.status : 'pending',
+    poidhBountyId: onChainId,
+    status:
+      onChainId != null
+        ? b.status === 'completed'
+          ? 'completed'
+          : 'live'
+        : 'pending',
     requestedBy: b.requestedBy ? String(b.requestedBy).toLowerCase() : null,
     createdAt: Number(b.createdAt) || Date.now(),
     jobLinkedAt: b.jobLinkedAt != null ? Number(b.jobLinkedAt) : null,
@@ -62,12 +69,16 @@ export function normalizePoidhBounties(input: unknown): PoidhBountyState {
     bounties: bounties as PoidhCommunityBounty[],
     spinUpAt: raw?.spinUpAt ?? null,
     bankrAgentJobId: raw?.bankrAgentJobId ?? null,
+    lastSpinUpError: raw?.lastSpinUpError ? String(raw.lastSpinUpError).slice(0, 500) : null,
+    lastSpinUpAt: raw?.lastSpinUpAt != null ? Number(raw.lastSpinUpAt) : null,
   };
 }
 
 export function pendingPoidhBounties(state: PoidhBountyState | undefined | null): PoidhCommunityBounty[] {
   if (!state?.enabled) return [];
-  return state.bounties.filter((b) => b.status === 'pending' && b.poidhBountyId == null);
+  return state.bounties.filter(
+    (b) => b.poidhBountyId == null && b.status !== 'completed'
+  );
 }
 
 export function bountyPublicUrl(bounty: PoidhCommunityBounty): string | null {

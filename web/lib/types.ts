@@ -131,6 +131,9 @@ export interface PoidhBountyState {
   /** Set when agent should create pending on-chain bounties. */
   spinUpAt: number | null;
   bankrAgentJobId?: string | null;
+  /** Last on-chain open failure (shown in Bounties tab). */
+  lastSpinUpError?: string | null;
+  lastSpinUpAt?: number | null;
 }
 
 export interface Community {
