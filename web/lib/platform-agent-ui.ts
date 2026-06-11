@@ -21,3 +21,6 @@ export const SPACE_MODERATION_NOTE =
 
 export const AGENT_POOL_NOTE =
   'Lane B — holders fund goals below. USDC settles to the platform agent wallet. When a goal is met, the agent executes the linked Bankr Skill.';
+
+export const WORK_BRIEF_NOTE =
+  'One task per line. Use description — $bounty — Category (Social, Creative, or Writing). $SYMBOL and the space URL are filled in automatically. Leave blank for default bagwork tasks.';

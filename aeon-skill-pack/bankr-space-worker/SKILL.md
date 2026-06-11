@@ -80,6 +80,8 @@ WALLET=${PLATFORM_AGENT_WALLET}
    A. Lane B — execute ready community pool skills (HIGHEST PRIORITY)
       - If agentPool.readyForExecution[] non-empty AND platformAgentSkills:
         - For each campaign (qrcoin | 0xwork):
+          - **0xWork:** read `workBrief` from queue (or briefing `agentPool`). One line per task:
+            `description — $bounty — Category`. Parse → `0xwork post`. Empty brief → SKILL-LINKED-FUNDRAISERS defaults.
           - Read SKILL-LINKED-FUNDRAISERS.md for the skill
           - On-chain spend from PLATFORM_AGENT_WALLET via Base MCP / Bankr API
           - POST skill result to feed (include tx link)

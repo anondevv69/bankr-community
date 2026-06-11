@@ -80,6 +80,9 @@ export async function GET(req: Request) {
                 0,
                 Math.round((campaign.goalUsd - campaign.raisedUsd) * 100) / 100
               ),
+              ...(campaign.skillId === '0xwork' && campaign.workBrief
+                ? { workBrief: campaign.workBrief }
+                : {}),
             })),
             readyForExecution: poolReady.map((campaign) => ({
               skillId: campaign.skillId,
@@ -89,6 +92,9 @@ export async function GET(req: Request) {
               matched: isAgentPoolCampaignFunded(campaign),
               readyForSkillExecution: canExecuteSkills,
               spendFrom: 'platform-agent-wallet' as const,
+              ...(campaign.skillId === '0xwork'
+                ? { workBrief: campaign.workBrief || null }
+                : {}),
             })),
           },
         };

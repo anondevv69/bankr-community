@@ -38,42 +38,51 @@ function matchesSpace(task: OxWorkTask, symbol: string, tokenAddress: string): b
 }
 
 export async function fetchOxWorkTasksForSpace(options: {
-  posterWallet: string;
+  posterWallets: string[];
   symbol: string;
   tokenAddress: string;
-  includeGlobalPoster?: boolean;
 }): Promise<OxWorkTasksResponse> {
-  const poster = options.posterWallet.toLowerCase();
+  const posters = [
+    ...new Set(
+      options.posterWallets
+        .map((w) => w.trim().toLowerCase())
+        .filter((w) => w.startsWith('0x') && w.length === 42)
+    ),
+  ];
+  const primaryPoster = posters[0] || '';
   const spaceUrl = `https://bankr.space/community/${options.tokenAddress.toLowerCase()}`;
 
-  let tasks: OxWorkTask[] = [];
-  try {
-    const res = await fetch(
-      `${OXWORK_API}/tasks?poster=${encodeURIComponent(poster)}&status=open&limit=50`,
-      { next: { revalidate: 60 } }
-    );
-    if (res.ok) {
+  const tasksById = new Map<number, OxWorkTask>();
+
+  for (const poster of posters) {
+    try {
+      const res = await fetch(
+        `${OXWORK_API}/tasks?poster=${encodeURIComponent(poster)}&status=open&limit=50`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) continue;
       const data = (await res.json()) as { tasks?: OxWorkTask[] };
-      tasks = data.tasks || [];
+      for (const task of data.tasks || []) {
+        if (
+          task.poster_address?.toLowerCase() === poster ||
+          matchesSpace(task, options.symbol, options.tokenAddress)
+        ) {
+          tasksById.set(task.id, task);
+        }
+      }
+    } catch {
+      // try next poster
     }
-  } catch {
-    tasks = [];
   }
 
-  if (options.includeGlobalPoster !== false) {
-    // Keep tasks posted by fee recipient; also allow symbol/space mention filter for shared pools
-    const filtered = tasks.filter(
-      (t) =>
-        t.poster_address?.toLowerCase() === poster ||
-        matchesSpace(t, options.symbol, options.tokenAddress)
-    );
-    tasks = filtered;
-  }
+  const tasks = [...tasksById.values()].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return {
     tasks,
     total: tasks.length,
-    posterWallet: poster,
+    posterWallet: primaryPoster,
     symbol: options.symbol,
     spaceUrl,
   };

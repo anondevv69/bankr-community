@@ -19,6 +19,8 @@ import {
   AGENT_POOL_SKILL_META,
   DEFAULT_AGENT_POOL_CAMPAIGNS,
   hasPublicAgentPool,
+  WORK_BRIEF_MAX_LENGTH,
+  WORK_BRIEF_PLACEHOLDER,
 } from '@/lib/agent-pool';
 import { MAX_TRUSTED_DELEGATES } from '@/lib/space-delegates';
 import { getSocialLinkPills } from '@/lib/social-links';
@@ -34,6 +36,7 @@ import {
   PLATFORM_AGENT_DOES_NOT,
   SPACE_MODERATION_NOTE,
   AGENT_POOL_NOTE,
+  WORK_BRIEF_NOTE,
 } from '@/lib/platform-agent-ui';
 import { AgentPoolWidget } from '@/components/AgentPoolWidget';
 import { BLOCKED_KEYWORD_LIMITS, normalizeBlockedKeywords } from '@/lib/content-moderation';
@@ -1097,26 +1100,58 @@ export function CommunityProfile({
                             </span>
                           </label>
                           {campaign.enabled ? (
-                            <div className="pl-6">
-                              <label className="block text-xs text-muted mb-1">Goal USD</label>
-                              <input
-                                type="number"
-                                min={1}
-                                className="w-full max-w-[140px] px-3 py-2 bg-bg border border-border rounded-lg text-sm"
-                                value={campaign.goalUsd}
-                                onChange={(e) =>
-                                  setAgentPoolCampaigns((current) =>
-                                    current.map((c) =>
-                                      c.skillId === campaign.skillId
-                                        ? {
-                                            ...c,
-                                            goalUsd: Math.max(1, Number(e.target.value) || 1),
-                                          }
-                                        : c
+                            <div className="pl-6 space-y-3">
+                              <div>
+                                <label className="block text-xs text-muted mb-1">Goal USD</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  className="w-full max-w-[140px] px-3 py-2 bg-bg border border-border rounded-lg text-sm"
+                                  value={campaign.goalUsd}
+                                  onChange={(e) =>
+                                    setAgentPoolCampaigns((current) =>
+                                      current.map((c) =>
+                                        c.skillId === campaign.skillId
+                                          ? {
+                                              ...c,
+                                              goalUsd: Math.max(1, Number(e.target.value) || 1),
+                                            }
+                                          : c
+                                      )
                                     )
-                                  )
-                                }
-                              />
+                                  }
+                                />
+                              </div>
+                              {campaign.skillId === '0xwork' ? (
+                                <div>
+                                  <label className="block text-xs text-muted mb-1">
+                                    Work brief (custom tasks)
+                                  </label>
+                                  <p className="text-[11px] text-muted mb-1.5">{WORK_BRIEF_NOTE}</p>
+                                  <textarea
+                                    rows={5}
+                                    maxLength={WORK_BRIEF_MAX_LENGTH}
+                                    placeholder={WORK_BRIEF_PLACEHOLDER}
+                                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm font-mono leading-relaxed resize-y min-h-[120px]"
+                                    value={campaign.workBrief || ''}
+                                    onChange={(e) =>
+                                      setAgentPoolCampaigns((current) =>
+                                        current.map((c) =>
+                                          c.skillId === campaign.skillId
+                                            ? {
+                                                ...c,
+                                                workBrief: e.target.value.slice(
+                                                  0,
+                                                  WORK_BRIEF_MAX_LENGTH
+                                                ),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>

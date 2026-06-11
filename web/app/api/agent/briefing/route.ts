@@ -17,6 +17,11 @@ import { communityUrl, getSiteUrl, communityUrlTemplate } from '@/lib/site-url';
 import { buildBriefingReplyText } from '@/lib/agent-reply';
 import { getTokenBeneficiaryWallet } from '@/lib/community-owner';
 import { buildFundraisingX402BaseUrl } from '@/lib/x402-fund-url';
+import {
+  matchedAgentPoolCampaigns,
+  openAgentPoolCampaigns,
+  readStoredAgentPool,
+} from '@/lib/agent-pool';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +80,11 @@ export async function GET(req: Request) {
       ? await getTokenBeneficiaryWallet(community.tokenAddress)
       : null;
     const x402FundUrl = buildFundraisingX402BaseUrl(beneficiaryWallet);
+    const agentPool = normalizedCommunity
+      ? readStoredAgentPool(normalizedCommunity.agentPool)
+      : null;
+    const agentPoolOpen = agentPool ? openAgentPoolCampaigns(agentPool) : [];
+    const agentPoolReady = agentPool ? matchedAgentPoolCampaigns(agentPool) : [];
 
     const opportunities: Array<{ type: string; message: string }> = [];
 
@@ -178,6 +188,26 @@ export async function GET(req: Request) {
             x402FundUrl,
             contributeNote:
               'Open campaigns accept $1 USDC per x402 click on the space page (bankr.space). Agents cannot pay via HTTP alone — wallet signature required.',
+          }
+        : null,
+      agentPool: normalizedCommunity?.usePlatformAgent
+        ? {
+            open: agentPoolOpen.map((c) => ({
+              skillId: c.skillId,
+              label: c.label,
+              goalUsd: c.goalUsd,
+              raisedUsd: c.raisedUsd,
+              ...(c.skillId === '0xwork' && c.workBrief ? { workBrief: c.workBrief } : {}),
+            })),
+            readyForExecution: agentPoolReady.map((c) => ({
+              skillId: c.skillId,
+              label: c.label,
+              goalUsd: c.goalUsd,
+              raisedUsd: c.raisedUsd,
+              ...(c.skillId === '0xwork' ? { workBrief: c.workBrief || null } : {}),
+            })),
+            workBriefFormat:
+              'One line per task: description — $bounty — Category (Social|Creative|Writing). Replace $SYMBOL with token symbol; include https://bankr.space/community/{token} in descriptions when relevant.',
           }
         : null,
       links: {

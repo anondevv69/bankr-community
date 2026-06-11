@@ -16,7 +16,8 @@ Holders fund **what the Bankr Space Agent should do** for a space — without wa
 3. Holders see **Fund the community agent** on the space page
 4. $1 USDC per x402 click → `PLATFORM_AGENT_WALLET`
 5. When `raisedUsd ≥ goalUsd` and **Authorize agent skill execution** is on → worker runs skill
-6. Worker posts result + `POST /api/agent/pool-executed` to mark done
+6. **0xWork:** worker parses admin `workBrief` (one task per line) into `0xwork post` calls
+7. Worker posts result + `POST /api/agent/pool-executed` to mark done
 
 ## APIs
 

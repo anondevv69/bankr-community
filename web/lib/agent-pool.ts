@@ -18,6 +18,19 @@ export const AGENT_POOL_SKILL_META: Record<
   },
 };
 
+export const WORK_BRIEF_MAX_LENGTH = 4000;
+
+/** Example lines for Edit profile → 0xWork work brief (one task per line). */
+export const WORK_BRIEF_PLACEHOLDER = `Share $SYMBOL on X with screenshot — $5 — Social
+Create 1500x500 banner for $SYMBOL — $25 — Creative
+Quote-tweet the space link with 2 sentences — $8 — Social`;
+
+export function normalizeWorkBrief(value: unknown): string | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim().slice(0, WORK_BRIEF_MAX_LENGTH);
+  return trimmed || null;
+}
+
 export const DEFAULT_AGENT_POOL_CAMPAIGNS: AgentPoolCampaign[] = AGENT_POOL_SKILL_IDS.map(
   (skillId) => ({
     skillId,
@@ -27,6 +40,7 @@ export const DEFAULT_AGENT_POOL_CAMPAIGNS: AgentPoolCampaign[] = AGENT_POOL_SKIL
     enabled: false,
     executedAt: null,
     executionNote: null,
+    workBrief: null,
   })
 );
 
@@ -66,6 +80,10 @@ function mergeCampaigns(raw: AgentPoolState | null | undefined): AgentPoolCampai
         executionNote:
           (item as AgentPoolCampaign).executionNote != null
             ? String((item as AgentPoolCampaign).executionNote).slice(0, 500)
+            : null,
+        workBrief:
+          skillId === '0xwork'
+            ? normalizeWorkBrief((item as AgentPoolCampaign).workBrief)
             : null,
       });
     }

@@ -82,6 +82,8 @@ export interface AgentPoolCampaign {
   /** Set when the platform worker reports skill execution. */
   executedAt?: number | null;
   executionNote?: string | null;
+  /** 0xWork only — admin brief; agent parses lines into tasks when pool is funded. */
+  workBrief?: string | null;
 }
 
 export interface AgentPoolState {

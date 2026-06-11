@@ -16,6 +16,7 @@ type AgentPoolView = {
   progressPct: number;
   remainingUsd: number;
   funded: boolean;
+  workBrief?: string | null;
 };
 
 const PRESET_PAYMENTS = [1, 5, 10];
@@ -191,6 +192,16 @@ export function AgentPoolWidget({
           <p className="text-[11px] text-muted mt-1">
             ${active.remainingUsd.toLocaleString()} remaining · agent executes when goal is met
           </p>
+          {active.skillId === '0xwork' && active.workBrief?.trim() ? (
+            <div className="mt-2 p-2 rounded-md border border-border bg-bg/50">
+              <div className="text-[10px] uppercase tracking-wide text-muted mb-1">
+                Planned work
+              </div>
+              <pre className="text-[11px] text-muted whitespace-pre-wrap font-sans leading-snug">
+                {active.workBrief.trim()}
+              </pre>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

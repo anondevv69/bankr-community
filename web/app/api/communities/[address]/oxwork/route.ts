@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCommunity } from '@/lib/db';
 import { getTokenBeneficiaryWallet } from '@/lib/community-owner';
 import { fetchOxWorkTasksForSpace } from '@/lib/oxwork-api';
+import { getPlatformAgentWallet } from '@/lib/platform-agent';
 import { normalizeAddr } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -18,14 +19,17 @@ export async function GET(_req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
-    const posterWallet =
+    const feeRecipientWallet =
       (await getTokenBeneficiaryWallet(tokenAddress)) || community.ownerWallet;
-    if (!posterWallet) {
+    const platformWallet = getPlatformAgentWallet();
+    const posterWallets = [feeRecipientWallet, platformWallet].filter(Boolean) as string[];
+
+    if (posterWallets.length === 0) {
       return NextResponse.json({ tasks: [], total: 0, symbol: community.symbol });
     }
 
     const data = await fetchOxWorkTasksForSpace({
-      posterWallet,
+      posterWallets,
       symbol: community.symbol,
       tokenAddress,
     });
