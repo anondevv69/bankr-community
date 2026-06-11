@@ -47,7 +47,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     let merged = mergeCommunityDefaults(community);
     const hasPending = pendingPoidhBounties(merged.poidhBounties).length > 0;
 
-    if (trySpinUp && hasPending && !merged.poidhBounties?.bankrAgentJobId) {
+    if (trySpinUp && hasPending) {
       await spinUpPoidhBountiesForCommunity(merged, { maxBounties: 1 });
       const refreshed = await getCommunity(tokenAddress);
       if (refreshed) merged = mergeCommunityDefaults(refreshed);

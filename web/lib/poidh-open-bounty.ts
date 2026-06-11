@@ -6,7 +6,7 @@ export const POIDH_OPEN_BOUNTY_GUIDE_URL =
 export const POIDH_OPEN_BOUNTY_STEPS = [
   {
     title: 'Create a bounty in the Bounties tab',
-    body: 'Any token holder describes the task (Dex profile, shoutout, listing, etc.). The Bankr agent opens it as an on-chain open bounty.',
+    body: 'Any token holder describes the task (Dex profile, shoutout, listing, etc.). It opens on-chain automatically as an open bounty.',
   },
   {
     title: 'Add funds in ETH',
@@ -17,8 +17,8 @@ export const POIDH_OPEN_BOUNTY_STEPS = [
     body: 'Complete the task, post proof in the bankr.space community, then submit your community post URL on the same bounty card.',
   },
   {
-    title: 'Agent proposes winner → 48h vote',
-    body: 'After you submit a claim, the Bankr agent proposes it for voting. Contributors vote yes/no for 48 hours (weighted by funds). If yes wins, the worker is paid from the pool automatically.',
+    title: 'Issuer proposes winner → 48h vote',
+    body: 'After you submit a claim, the issuer wallet proposes it for voting. Contributors vote yes/no for 48 hours (weighted by funds). If yes wins, the worker is paid from the pool automatically.',
   },
 ] as const;
 

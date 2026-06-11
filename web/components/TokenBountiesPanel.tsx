@@ -148,7 +148,7 @@ export function TokenBountiesPanel({
       <div className="p-4 rounded-xl border border-border bg-surface space-y-1">
         <div className="text-sm font-semibold">Community bounties for ${symbol}</div>
         <p className="text-[11px] text-muted leading-relaxed">
-          Create a task → Bankr agent opens it on-chain → add ETH below → do the work →{' '}
+          Create a task → opens on-chain automatically → add ETH below → do the work →{' '}
           <strong className="font-medium text-text">post proof in community</strong> → submit claim
           here → contributors vote 48h to pay out.
         </p>
