@@ -29,9 +29,14 @@ import {
 } from '@/lib/community-profile-sync';
 import { normalizeSocialLinks } from '@/lib/social-links';
 import { normalizeFundraising } from '@/lib/fundraising';
+import {
+  applyAgentPoolAdminSave,
+  applyBeneficiaryFundraisingSave,
+  isAgentPoolCampaignLocked,
+} from '@/lib/fundraiser-locks';
 import { normalizeBannerUrl } from '@/lib/banner-url';
 import { normalizeBlockedKeywords } from '@/lib/content-moderation';
-import { normalizeAgentPool } from '@/lib/agent-pool';
+import { normalizeAgentPool, readStoredAgentPool } from '@/lib/agent-pool';
 import { fetchTokenMarketStats } from '@/lib/dexscreener';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
@@ -246,6 +251,16 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (body.usePlatformAgent !== undefined) {
       nextUsePlatformAgent = Boolean(body.usePlatformAgent);
       if (!nextUsePlatformAgent) {
+        const pool = readStoredAgentPool(current.agentPool);
+        if (pool.campaigns.some((c) => isAgentPoolCampaignLocked(c))) {
+          return NextResponse.json(
+            {
+              error:
+                'Cannot disable the Bankr Space Agent while a community goal has active USDC contributions. Wait until the goal is met.',
+            },
+            { status: 400 }
+          );
+        }
         nextPlatformAgentSkills = false;
       }
     }
@@ -258,7 +273,15 @@ export async function PATCH(req: Request, { params }: RouteParams) {
           { status: 400 }
         );
       }
-      nextAgentPool = normalizeAgentPool(body.agentPool, { fromSave: true });
+      const draftPool = normalizeAgentPool(body.agentPool, { fromSave: true });
+      const poolSave = applyAgentPoolAdminSave(current.agentPool, draftPool.campaigns);
+      if (!poolSave.ok) {
+        return NextResponse.json({ error: poolSave.error }, { status: poolSave.status });
+      }
+      nextAgentPool = normalizeAgentPool({
+        optedIn: poolSave.campaigns.some((c) => c.enabled),
+        campaigns: poolSave.campaigns,
+      });
     }
     if (!nextUsePlatformAgent) {
       nextAgentPool = normalizeAgentPool({ optedIn: false, campaigns: [] });
@@ -266,6 +289,19 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (body.platformAgentSkills !== undefined) {
       nextPlatformAgentSkills =
         nextUsePlatformAgent && Boolean(body.platformAgentSkills);
+    }
+
+    let nextFundraising = current.fundraising;
+    if (body.fundraising !== undefined) {
+      const draft = normalizeFundraising(body.fundraising, { fromSave: true });
+      const save = applyBeneficiaryFundraisingSave(current.fundraising, draft.campaigns);
+      if (!save.ok) {
+        return NextResponse.json({ error: save.error }, { status: save.status });
+      }
+      nextFundraising = normalizeFundraising({
+        optedIn: save.campaigns.some((c) => c.enabled),
+        campaigns: save.campaigns,
+      });
     }
 
     let nextFeeRecipientAgent = current.feeRecipientAgent ?? null;
@@ -309,10 +345,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       useDexBanner: boolField(body, 'useDexBanner', current.useDexBanner ?? true),
       useDexDescription: boolField(body, 'useDexDescription', current.useDexDescription ?? true),
       useDexLinks: boolField(body, 'useDexLinks', current.useDexLinks ?? true),
-      fundraising:
-        body.fundraising !== undefined
-          ? normalizeFundraising(body.fundraising, { fromSave: true })
-          : current.fundraising,
+      fundraising: nextFundraising,
       agentPool: nextAgentPool,
     });
 

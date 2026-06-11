@@ -63,8 +63,9 @@ export function CommunityProposeGoal({
       <div>
         <div className="text-sm font-semibold">Propose a community goal</div>
         <p className="text-[11px] text-muted mt-1 leading-snug">
-          Holders choose what the Bankr Space Agent should do for ${symbol} — bagwork,
-          QRCoin, spread the word. Separate from fee-recipient programs on the left.
+          Holders choose what the Bankr Space Agent should do for ${symbol}. One open
+          community goal at a time — once people contribute, it cannot be closed until the
+          goal is met.
         </p>
       </div>
 

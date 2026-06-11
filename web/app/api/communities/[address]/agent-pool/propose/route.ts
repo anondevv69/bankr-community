@@ -7,6 +7,10 @@ import {
   applyCommunityAgentProposal,
   readStoredAgentPool,
 } from '@/lib/agent-pool';
+import {
+  assertCanOpenAgentPoolGoal,
+  isAgentPoolCampaignLocked,
+} from '@/lib/fundraiser-locks';
 import { normalizeAddr } from '@/lib/utils';
 import type { AgentPoolSkillId } from '@/lib/types';
 
@@ -69,6 +73,25 @@ export async function POST(req: Request, { params }: RouteParams) {
     }
 
     const current = mergeCommunityDefaults(communities[index]);
+    const storedPool = readStoredAgentPool(current.agentPool);
+    const existing = storedPool.campaigns.find((c) => c.skillId === skillId);
+
+    const openConflict = assertCanOpenAgentPoolGoal(current.agentPool, skillId);
+    if (openConflict) {
+      return NextResponse.json({ error: openConflict }, { status: 400 });
+    }
+
+    if (existing && isAgentPoolCampaignLocked(existing)) {
+      if (goalUsd < existing.raisedUsd) {
+        return NextResponse.json(
+          {
+            error: `Goal cannot be lowered below $${existing.raisedUsd} already raised.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const nextPool = applyCommunityAgentProposal(current.agentPool, {
       skillId,
       goalUsd,
@@ -76,18 +99,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       label: body.label,
       proposedBy: wallet,
     });
-
-    const existing = readStoredAgentPool(current.agentPool).campaigns.find(
-      (c) => c.skillId === skillId
-    );
-    if (existing?.enabled && existing.raisedUsd > 0 && goalUsd < existing.raisedUsd) {
-      return NextResponse.json(
-        {
-          error: `Goal cannot be lowered below $${existing.raisedUsd} already raised.`,
-        },
-        { status: 400 }
-      );
-    }
 
     communities[index] = mergeCommunityDefaults({
       ...current,

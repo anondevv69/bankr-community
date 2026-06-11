@@ -14,7 +14,13 @@ import type {
   AgentPoolCampaign,
   TrustedDelegateEntry,
 } from '@/lib/types';
-import { DEFAULT_CAMPAIGNS } from '@/lib/fundraising';
+import { DEFAULT_CAMPAIGNS, isCampaignFunded } from '@/lib/fundraising';
+import {
+  assertCanOpenBeneficiaryCampaign,
+  isAgentPoolCampaignLocked,
+  isBeneficiaryCampaignLocked,
+} from '@/lib/fundraiser-locks';
+import { isAgentPoolCampaignFunded } from '@/lib/agent-pool';
 import {
   AGENT_POOL_SKILL_META,
   DEFAULT_AGENT_POOL_CAMPAIGNS,
@@ -328,9 +334,95 @@ export function CommunityProfile({
   }
 
   function updateCampaign(id: FundraisingCampaign['id'], patch: Partial<FundraisingCampaign>) {
-    setFundraisingCampaigns((current) =>
-      current.map((c) => (c.id === id ? { ...c, ...patch } : c))
-    );
+    setFundraisingCampaigns((current) => {
+      const target = current.find((c) => c.id === id);
+      if (!target) return current;
+
+      if (patch.enabled === false && isBeneficiaryCampaignLocked(target)) {
+        alert(
+          'This fundraiser cannot be closed while contributors have paid in. It stays open until the goal is met.'
+        );
+        return current;
+      }
+
+      if (patch.enabled === true) {
+        const conflict = assertCanOpenBeneficiaryCampaign(
+          { optedIn: true, campaigns: current },
+          id,
+          true
+        );
+        if (conflict) {
+          alert(conflict);
+          return current;
+        }
+        return current.map((c) => {
+          if (c.id === id) return { ...c, ...patch, enabled: true };
+          if (c.enabled && !isCampaignFunded(c) && c.raisedUsd === 0) {
+            return { ...c, enabled: false };
+          }
+          return c;
+        });
+      }
+
+      if (
+        patch.goalUsd !== undefined &&
+        isBeneficiaryCampaignLocked(target) &&
+        patch.goalUsd < target.raisedUsd
+      ) {
+        alert(`Goal cannot be below $${target.raisedUsd} already raised.`);
+        return current;
+      }
+
+      return current.map((c) => (c.id === id ? { ...c, ...patch } : c));
+    });
+  }
+
+  function updateAgentPoolCampaign(
+    skillId: AgentPoolCampaign['skillId'],
+    patch: Partial<AgentPoolCampaign>
+  ) {
+    setAgentPoolCampaigns((current) => {
+      const target = current.find((c) => c.skillId === skillId);
+      if (!target) return current;
+
+      if (patch.enabled === false && isAgentPoolCampaignLocked(target)) {
+        alert(
+          'This community goal cannot be closed while contributors have paid in. It stays open until the goal is met.'
+        );
+        return current;
+      }
+
+      if (patch.enabled === true) {
+        const otherOpen = current.find(
+          (c) =>
+            c.skillId !== skillId && c.enabled && !isAgentPoolCampaignFunded(c)
+        );
+        if (otherOpen?.raisedUsd && otherOpen.raisedUsd > 0) {
+          alert(
+            `Only one community agent goal can be open at a time. "${otherOpen.label}" has active contributions.`
+          );
+          return current;
+        }
+        return current.map((c) => {
+          if (c.skillId === skillId) return { ...c, ...patch, enabled: true };
+          if (c.enabled && !isAgentPoolCampaignFunded(c) && c.raisedUsd === 0) {
+            return { ...c, enabled: false };
+          }
+          return c;
+        });
+      }
+
+      if (
+        patch.goalUsd !== undefined &&
+        isAgentPoolCampaignLocked(target) &&
+        patch.goalUsd < target.raisedUsd
+      ) {
+        alert(`Goal cannot be below $${target.raisedUsd} already raised.`);
+        return current;
+      }
+
+      return current.map((c) => (c.skillId === skillId ? { ...c, ...patch } : c));
+    });
   }
 
   async function identifyDelegateAgent(index: number) {
@@ -776,7 +868,7 @@ export function CommunityProfile({
               {canEditFundraising ? (
                 <EditSection
                   title="Fundraising campaigns"
-                  hint="Fee recipient only. USDC goals and x402 pay-to — never shared with deployer or delegates."
+                  hint="Fee recipient only. One open fundraiser at a time. Once contributors pay in, the goal cannot be closed until it is met."
                 >
                   <div className="space-y-3">
                     {fundraisingCampaigns.map((campaign) => (
@@ -784,11 +876,18 @@ export function CommunityProfile({
                         key={campaign.id}
                         className="p-3 border border-border rounded-lg bg-bg/40 space-y-2"
                       >
-                        <label className="flex items-start gap-2 text-sm cursor-pointer">
+                        <label
+                          className={`flex items-start gap-2 text-sm ${
+                            isBeneficiaryCampaignLocked(campaign)
+                              ? 'cursor-not-allowed opacity-90'
+                              : 'cursor-pointer'
+                          }`}
+                        >
                           <input
                             type="checkbox"
                             className="mt-0.5"
                             checked={campaign.enabled}
+                            disabled={isBeneficiaryCampaignLocked(campaign)}
                             onChange={(e) =>
                               updateCampaign(campaign.id, { enabled: e.target.checked })
                             }
@@ -799,6 +898,11 @@ export function CommunityProfile({
                               ${campaign.raisedUsd.toLocaleString()} raised · goal $
                               {campaign.goalUsd.toLocaleString()}
                             </span>
+                            {isBeneficiaryCampaignLocked(campaign) ? (
+                              <span className="block text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                                Locked — contributors have paid in; cannot close until goal is met.
+                              </span>
+                            ) : null}
                           </span>
                         </label>
                         {campaign.id === 'custom' ? (
@@ -1030,19 +1134,22 @@ export function CommunityProfile({
                           key={campaign.skillId}
                           className="p-3 border border-border rounded-lg bg-bg/40 space-y-2"
                         >
-                          <label className="flex items-start gap-2 text-sm cursor-pointer">
+                          <label
+                            className={`flex items-start gap-2 text-sm ${
+                              isAgentPoolCampaignLocked(campaign)
+                                ? 'cursor-not-allowed opacity-90'
+                                : 'cursor-pointer'
+                            }`}
+                          >
                             <input
                               type="checkbox"
                               className="mt-0.5"
                               checked={campaign.enabled}
+                              disabled={isAgentPoolCampaignLocked(campaign)}
                               onChange={(e) =>
-                                setAgentPoolCampaigns((current) =>
-                                  current.map((c) =>
-                                    c.skillId === campaign.skillId
-                                      ? { ...c, enabled: e.target.checked }
-                                      : c
-                                  )
-                                )
+                                updateAgentPoolCampaign(campaign.skillId, {
+                                  enabled: e.target.checked,
+                                })
                               }
                             />
                             <span>
@@ -1050,6 +1157,11 @@ export function CommunityProfile({
                               <span className="block text-xs text-muted mt-0.5">
                                 {AGENT_POOL_SKILL_META[campaign.skillId].description}
                               </span>
+                              {isAgentPoolCampaignLocked(campaign) ? (
+                                <span className="block text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                                  Locked — contributors have paid in; cannot close until goal is met.
+                                </span>
+                              ) : null}
                             </span>
                           </label>
                           {campaign.enabled ? (
@@ -1061,18 +1173,11 @@ export function CommunityProfile({
                                   min={1}
                                   className="w-full max-w-[140px] px-3 py-2 bg-bg border border-border rounded-lg text-sm"
                                   value={campaign.goalUsd}
-                                  onChange={(e) =>
-                                    setAgentPoolCampaigns((current) =>
-                                      current.map((c) =>
-                                        c.skillId === campaign.skillId
-                                          ? {
-                                              ...c,
-                                              goalUsd: Math.max(1, Number(e.target.value) || 1),
-                                            }
-                                          : c
-                                      )
-                                    )
-                                  }
+                                onChange={(e) =>
+                                  updateAgentPoolCampaign(campaign.skillId, {
+                                    goalUsd: Math.max(1, Number(e.target.value) || 1),
+                                  })
+                                }
                                 />
                               </div>
                               {campaign.skillId === '0xwork' ? (
@@ -1088,19 +1193,9 @@ export function CommunityProfile({
                                     className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm font-mono leading-relaxed resize-y min-h-[120px]"
                                     value={campaign.workBrief || ''}
                                     onChange={(e) =>
-                                      setAgentPoolCampaigns((current) =>
-                                        current.map((c) =>
-                                          c.skillId === campaign.skillId
-                                            ? {
-                                                ...c,
-                                                workBrief: e.target.value.slice(
-                                                  0,
-                                                  WORK_BRIEF_MAX_LENGTH
-                                                ),
-                                              }
-                                            : c
-                                        )
-                                      )
+                                      updateAgentPoolCampaign(campaign.skillId, {
+                                        workBrief: e.target.value.slice(0, WORK_BRIEF_MAX_LENGTH),
+                                      })
                                     }
                                   />
                                 </div>
