@@ -83,6 +83,19 @@ async function readMinBountyAmount(): Promise<bigint> {
   }
 }
 
+async function readBountyRow(id: number) {
+  try {
+    return await poidhPublicClient.readContract({
+      address: POIDH_V3_BASE,
+      abi: poidhV3Abi,
+      functionName: 'bounties',
+      args: [BigInt(id)],
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function resolveBountyIdAfterCreate(
   txHash: `0x${string}`,
   issuer: Address
@@ -92,38 +105,21 @@ async function resolveBountyIdAfterCreate(
     confirmations: 1,
   });
 
-  for (const log of receipt.logs) {
-    if (log.address.toLowerCase() !== POIDH_V3_BASE.toLowerCase()) continue;
-    if (log.topics.length >= 2) {
-      const id = Number(BigInt(log.topics[1]!));
-      if (id > 0) {
-        const row = await poidhPublicClient.readContract({
-          address: POIDH_V3_BASE,
-          abi: poidhV3Abi,
-          functionName: 'bounties',
-          args: [BigInt(id)],
-        });
-        if (String(row[1]).toLowerCase() === issuer.toLowerCase()) {
-          return id;
-        }
-      }
-    }
+  if (receipt.status === 'reverted') {
+    throw new Error('POIDH createOpenBounty transaction reverted on-chain');
   }
 
-  const counter = await poidhPublicClient.readContract({
-    address: POIDH_V3_BASE,
-    abi: poidhV3Abi,
-    functionName: 'bountyCounter',
-  });
-  // bountyCounter is the *next* id; the bounty we just created is counter - 1.
-  const id = Number(counter) - 1;
-  if (id > 0) {
-    const row = await poidhPublicClient.readContract({
+  const counter = Number(
+    await poidhPublicClient.readContract({
       address: POIDH_V3_BASE,
       abi: poidhV3Abi,
-      functionName: 'bounties',
-      args: [BigInt(id)],
-    });
+      functionName: 'bountyCounter',
+    })
+  );
+
+  for (let id = counter - 1; id >= Math.max(1, counter - 5); id -= 1) {
+    const row = await readBountyRow(id);
+    if (!row) continue;
     if (String(row[1]).toLowerCase() === issuer.toLowerCase()) {
       return id;
     }
