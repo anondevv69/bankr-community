@@ -11,9 +11,15 @@ import type {
   StandardSocialLinkKey,
   TokenMarketStats,
   FundraisingCampaign,
+  AgentPoolCampaign,
   TrustedDelegateEntry,
 } from '@/lib/types';
 import { DEFAULT_CAMPAIGNS, completedCampaigns, hasPublicFundraising } from '@/lib/fundraising';
+import {
+  AGENT_POOL_SKILL_META,
+  DEFAULT_AGENT_POOL_CAMPAIGNS,
+  hasPublicAgentPool,
+} from '@/lib/agent-pool';
 import { MAX_TRUSTED_DELEGATES } from '@/lib/space-delegates';
 import { getSocialLinkPills } from '@/lib/social-links';
 import { VerifiedBeneficiarySection } from '@/components/VerifiedBeneficiarySection';
@@ -23,6 +29,14 @@ import { TokenAvatar } from '@/components/TokenAvatar';
 import { BANNER_SIZE_LABEL, BANNER_ASPECT_LABEL } from '@/lib/banner-url';
 import { ICON_SIZE_LABEL, ICON_ASPECT_LABEL, ICON_MIN_SIZE, ICON_MAX_SIZE } from '@/lib/image-specs';
 import { isPlatformAgentUiEnabled } from '@/lib/platform-agent';
+import {
+  PLATFORM_AGENT_DOES,
+  PLATFORM_AGENT_DOES_NOT,
+  SPACE_MODERATION_NOTE,
+  AGENT_POOL_NOTE,
+} from '@/lib/platform-agent-ui';
+import { AgentPoolWidget } from '@/components/AgentPoolWidget';
+import { BLOCKED_KEYWORD_LIMITS, normalizeBlockedKeywords } from '@/lib/content-moderation';
 import { shortAddr } from '@/lib/utils';
 import { apiFetch } from '@/lib/wagmi';
 
@@ -262,6 +276,12 @@ export function CommunityProfile({
   const [trustedDelegates, setTrustedDelegates] = useState<TrustedDelegateEntry[]>(
     community.trustedDelegates || []
   );
+  const [blockedKeywordsText, setBlockedKeywordsText] = useState(
+    (community.blockedKeywords || []).join('\n')
+  );
+  const [agentPoolCampaigns, setAgentPoolCampaigns] = useState<AgentPoolCampaign[]>(
+    community.agentPool?.campaigns || DEFAULT_AGENT_POOL_CAMPAIGNS.map((c) => ({ ...c }))
+  );
   const [resolvingAgentIndex, setResolvingAgentIndex] = useState<number | null>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -306,6 +326,10 @@ export function CommunityProfile({
     setUsePlatformAgent(community.usePlatformAgent ?? false);
     setPlatformAgentSkills(community.platformAgentSkills ?? false);
     setTrustedDelegates(community.trustedDelegates || []);
+    setBlockedKeywordsText((community.blockedKeywords || []).join('\n'));
+    setAgentPoolCampaigns(
+      community.agentPool?.campaigns || DEFAULT_AGENT_POOL_CAMPAIGNS.map((c) => ({ ...c }))
+    );
   }, [community]);
 
   useEffect(() => {
@@ -340,6 +364,15 @@ export function CommunityProfile({
     setUsePlatformAgent(community.usePlatformAgent ?? false);
     setPlatformAgentSkills(community.platformAgentSkills ?? false);
     setTrustedDelegates(community.trustedDelegates || []);
+    setBlockedKeywordsText((community.blockedKeywords || []).join('\n'));
+    setAgentPoolCampaigns(
+      community.agentPool?.campaigns || DEFAULT_AGENT_POOL_CAMPAIGNS.map((c) => ({ ...c }))
+    );
+  }
+
+  function parseBlockedKeywordsFromText(): string[] {
+    const lines = blockedKeywordsText.split(/\r?\n/);
+    return normalizeBlockedKeywords(lines);
   }
 
   function updateCampaign(id: FundraisingCampaign['id'], patch: Partial<FundraisingCampaign>) {
@@ -372,26 +405,6 @@ export function CommunityProfile({
     }
   }
 
-  async function saveAgentSettings() {
-    if (!canManagePlatformAgent || !address) return;
-    setSaving(true);
-    try {
-      await apiFetch(`/api/communities/${community.tokenAddress}`, {
-        method: 'PATCH',
-        wallet: address,
-        body: JSON.stringify({
-          usePlatformAgent,
-          ...(canEnablePlatformAgentSkills ? { platformAgentSkills } : {}),
-        }),
-      });
-      onUpdated();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Agent settings failed');
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function saveProfile() {
     if (!canManage || !address) return;
     setSaving(true);
@@ -413,10 +426,14 @@ export function CommunityProfile({
           ...(canManageTeamAccess
             ? { allowDeployerEdit, trustedDelegates }
             : {}),
+          blockedKeywords: parseBlockedKeywordsFromText(),
           ...(canManagePlatformAgent && isPlatformAgentUiEnabled() && editing
             ? {
                 usePlatformAgent,
                 ...(canEnablePlatformAgentSkills ? { platformAgentSkills } : {}),
+                ...(usePlatformAgent
+                  ? { agentPool: { campaigns: agentPoolCampaigns } }
+                  : {}),
               }
             : {}),
         }),
@@ -959,6 +976,156 @@ export function CommunityProfile({
                 </EditSection>
               ) : null}
 
+              {canManage ? (
+                <EditSection
+                  title="Content moderation"
+                  hint="Blocked phrases apply to holder posts. Team wallets and the platform agent are exempt."
+                >
+                  <label className="block text-xs text-muted mb-2">
+                    Blocked keywords / phrases (one per line, max{' '}
+                    {BLOCKED_KEYWORD_LIMITS.maxKeywords})
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm font-mono min-h-[100px]"
+                    placeholder={'scam\nfree mint\nt.me/spam'}
+                    value={blockedKeywordsText}
+                    onChange={(e) => setBlockedKeywordsText(e.target.value)}
+                  />
+                  <p className="text-xs text-muted mt-2">{SPACE_MODERATION_NOTE}</p>
+                  {(community.blockedKeywords?.length ?? 0) > 0 && !blockedKeywordsText.trim() ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Saving will clear the current blocklist.
+                    </p>
+                  ) : null}
+                </EditSection>
+              ) : null}
+
+              {canManagePlatformAgent && isPlatformAgentUiEnabled() ? (
+                <EditSection
+                  title="Community agent"
+                  hint="Optional Bankr Space Agent — one platform worker serves all opted-in spaces."
+                >
+                  <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={usePlatformAgent}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        setUsePlatformAgent(on);
+                        if (!on) setPlatformAgentSkills(false);
+                      }}
+                    />
+                    <span>
+                      <span className="font-medium">Use Bankr Space Agent</span>
+                      <span className="block text-xs text-muted mt-0.5">
+                        Runs on GitHub every ~15 min when enabled and verified. Posts as the
+                        platform wallet — not your personal wallet.
+                      </span>
+                    </span>
+                  </label>
+                  {usePlatformAgent && canEnablePlatformAgentSkills ? (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer pl-6 mt-3">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={platformAgentSkills}
+                        onChange={(e) => setPlatformAgentSkills(e.target.checked)}
+                      />
+                      <span>
+                        <span className="font-medium">Authorize agent skill execution</span>
+                        <span className="block text-xs text-muted mt-0.5">
+                          After a goal is matched (community pool or beneficiary fundraiser), agent
+                          may run QRCoin / 0xWork on-chain.
+                        </span>
+                      </span>
+                    </label>
+                  ) : null}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 text-xs">
+                    <div className="p-3 rounded-lg border border-border bg-bg/40">
+                      <div className="font-semibold text-green-600 dark:text-green-400 mb-2">
+                        Agent can
+                      </div>
+                      <ul className="space-y-1.5 text-muted list-disc pl-4">
+                        {PLATFORM_AGENT_DOES.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-3 rounded-lg border border-border bg-bg/40">
+                      <div className="font-semibold text-amber-600 dark:text-amber-400 mb-2">
+                        Agent cannot
+                      </div>
+                      <ul className="space-y-1.5 text-muted list-disc pl-4">
+                        {PLATFORM_AGENT_DOES_NOT.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  {usePlatformAgent ? (
+                    <div className="mt-4 space-y-3 border-t border-border pt-4">
+                      <div>
+                        <div className="text-sm font-medium">Community agent pool (Lane B)</div>
+                        <p className="text-xs text-muted mt-1">{AGENT_POOL_NOTE}</p>
+                      </div>
+                      {agentPoolCampaigns.map((campaign) => (
+                        <div
+                          key={campaign.skillId}
+                          className="p-3 border border-border rounded-lg bg-bg/40 space-y-2"
+                        >
+                          <label className="flex items-start gap-2 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5"
+                              checked={campaign.enabled}
+                              onChange={(e) =>
+                                setAgentPoolCampaigns((current) =>
+                                  current.map((c) =>
+                                    c.skillId === campaign.skillId
+                                      ? { ...c, enabled: e.target.checked }
+                                      : c
+                                  )
+                                )
+                              }
+                            />
+                            <span>
+                              <span className="font-medium">{campaign.label}</span>
+                              <span className="block text-xs text-muted mt-0.5">
+                                {AGENT_POOL_SKILL_META[campaign.skillId].description}
+                              </span>
+                            </span>
+                          </label>
+                          {campaign.enabled ? (
+                            <div className="pl-6">
+                              <label className="block text-xs text-muted mb-1">Goal USD</label>
+                              <input
+                                type="number"
+                                min={1}
+                                className="w-full max-w-[140px] px-3 py-2 bg-bg border border-border rounded-lg text-sm"
+                                value={campaign.goalUsd}
+                                onChange={(e) =>
+                                  setAgentPoolCampaigns((current) =>
+                                    current.map((c) =>
+                                      c.skillId === campaign.skillId
+                                        ? {
+                                            ...c,
+                                            goalUsd: Math.max(1, Number(e.target.value) || 1),
+                                          }
+                                        : c
+                                    )
+                                  )
+                                }
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </EditSection>
+              ) : null}
+
               <button
                 type="button"
                 onClick={saveProfile}
@@ -982,67 +1149,54 @@ export function CommunityProfile({
         />
       </div>
 
-      {canManagePlatformAgent && isPlatformAgentUiEnabled() ? (
+      {canManagePlatformAgent && isPlatformAgentUiEnabled() && !editing ? (
         <div className="mt-6 p-4 border border-border rounded-xl bg-surface space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold">Community agent</h3>
-            <p className="text-xs text-muted mt-1">
-              {isDeployer && !canEnablePlatformAgentSkills
-                ? 'Enable Bankr Space Agent to help moderate and run community tasks. x402 USDC always goes to the fee recipient — not the deployer.'
-                : 'Bankr Space Agent can moderate this space and run skill tasks after fundraisers match. USDC stays with the fee recipient.'}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Community agent</h3>
+              <p className="text-xs text-muted mt-1">
+                {community.usePlatformAgent
+                  ? community.verified
+                    ? 'Bankr Space Agent is on for this space.'
+                    : 'Enabled — active after the fee recipient verifies.'
+                  : 'Off — turn on in Edit profile to enable autopilot posts.'}
+              </p>
+            </div>
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="text-xs text-accent-hover hover:underline shrink-0"
+              >
+                Edit settings
+              </button>
+            ) : null}
           </div>
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={usePlatformAgent}
-              onChange={(e) => {
-                const on = e.target.checked;
-                setUsePlatformAgent(on);
-                if (!on) setPlatformAgentSkills(false);
-              }}
-            />
-            <span>
-              <span className="font-medium">Use Bankr Space Agent</span>
-              <span className="block text-xs text-muted mt-0.5">
-                Posts, pins, and profile updates on this space once verified. One platform agent
-                serves all opted-in communities.
-              </span>
-            </span>
-          </label>
-          {usePlatformAgent && canEnablePlatformAgentSkills ? (
-            <label className="flex items-start gap-2 text-sm cursor-pointer pl-6">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={platformAgentSkills}
-                onChange={(e) => setPlatformAgentSkills(e.target.checked)}
-              />
-              <span>
-                <span className="font-medium">Run skill-linked fundraisers</span>
-                <span className="block text-xs text-muted mt-0.5">
-                  After x402 goal is matched, agent may run QRCoin / 0xWork from your Bankr wallet.
-                  You still enable fundraisers separately.
-                </span>
-              </span>
-            </label>
+          {community.usePlatformAgent ? (
+            <div className="grid gap-3 sm:grid-cols-2 text-xs">
+              <div>
+                <div className="font-medium text-green-600 dark:text-green-400 mb-1">Can do</div>
+                <ul className="text-muted space-y-1 list-disc pl-4">
+                  {PLATFORM_AGENT_DOES.slice(0, 3).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="font-medium text-muted mb-1">Cannot do</div>
+                <ul className="text-muted space-y-1 list-disc pl-4">
+                  {PLATFORM_AGENT_DOES_NOT.slice(0, 3).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           ) : null}
-          {(usePlatformAgent !== (community.usePlatformAgent ?? false) ||
-            (canEnablePlatformAgentSkills &&
-              platformAgentSkills !== (community.platformAgentSkills ?? false))) ? (
-            <button
-              type="button"
-              onClick={() => void saveAgentSettings()}
-              disabled={saving}
-              className="px-3 py-1.5 text-xs font-medium bg-accent text-white rounded-lg disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save agent settings'}
-            </button>
-          ) : community.usePlatformAgent ? (
-            <p className="text-xs text-green-600 dark:text-green-400">
-              Bankr Space Agent is enabled
-              {community.verified ? '' : ' — active after space is verified'}
+          {(community.blockedKeywords?.length ?? 0) > 0 ? (
+            <p className="text-xs text-muted">
+              {community.blockedKeywords!.length} blocked phrase
+              {community.blockedKeywords!.length === 1 ? '' : 's'} on this space (holder posts
+              only).
             </p>
           ) : null}
         </div>
@@ -1054,6 +1208,14 @@ export function CommunityProfile({
           symbol={community.symbol}
           refreshKey={JSON.stringify(community.fundraising?.campaigns)}
           layout="horizontal"
+        />
+      ) : null}
+
+      {community.usePlatformAgent && hasPublicAgentPool(community.agentPool) ? (
+        <AgentPoolWidget
+          tokenAddress={community.tokenAddress}
+          symbol={community.symbol}
+          refreshKey={JSON.stringify(community.agentPool?.campaigns)}
         />
       ) : null}
 

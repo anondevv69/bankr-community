@@ -6,6 +6,9 @@ import {
   updateCommunityCounts,
 } from '@/lib/db';
 import { checkParticipation } from '@/lib/participation';
+import { resolveSpacePermissions } from '@/lib/community-owner';
+import { mergeCommunityDefaults } from '@/lib/community-posts';
+import { contentMatchesBlockedKeyword } from '@/lib/content-moderation';
 import { resolveAuthorProfile } from '@/lib/profiles';
 import { parsePostSource } from '@/lib/post-source';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
@@ -57,6 +60,28 @@ export async function POST(req: Request, { params }: RouteParams) {
         },
         { status: 403 }
       );
+    }
+
+    const normalized = mergeCommunityDefaults(community);
+    const permissions = await resolveSpacePermissions(
+      wallet,
+      tokenAddress,
+      community.chain || 'base'
+    );
+    if (!permissions.isPrivilegedPoster) {
+      const blocked = contentMatchesBlockedKeyword(
+        content,
+        normalized.blockedKeywords
+      );
+      if (blocked) {
+        return NextResponse.json(
+          {
+            error: `Post blocked: content matches a blocked phrase on this space`,
+            blockedKeyword: blocked,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const posts = await getPosts(tokenAddress);

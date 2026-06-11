@@ -17,17 +17,16 @@ export async function GET() {
     agent: platformAgentMeta(),
     moneyRules: PLATFORM_AGENT_MONEY_RULES,
     capabilities: {
-      social: 'profile, post, pin when usePlatformAgent (fee recipient opt-in)',
-      fundraising: 'never enables — fee recipient only; trusted delegates may request',
-      x402: 'settles to fee recipient only — agent never receives USDC',
-      skills:
-        'qrcoin, 0xwork only when platformAgentSkills + campaign matched (raised ≥ goal via x402)',
+      social: 'post milestones, pin agent posts when usePlatformAgent',
+      laneA: 'beneficiary fundraisers — x402 to fee recipient',
+      laneB: 'community agent pool — x402 to platform agent wallet (QRCoin, 0xWork)',
+      skills: 'execute when platformAgentSkills + goal matched',
+      moderation: 'blocked keywords enforced on holder posts only',
     },
     optIn: {
-      usePlatformAgent:
-        'deployer or verified fee recipient — Community agent panel on space page',
-      platformAgentSkills:
-        'fee recipient only — skill spend from their Bankr wallet after x402 goal matched',
+      usePlatformAgent: 'deployer or verified fee recipient',
+      platformAgentSkills: 'fee recipient — authorize on-chain skill execution',
+      agentPool: 'deployer or fee recipient — enable community-funded goals',
     },
     install: 'install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities',
   });

@@ -1,6 +1,8 @@
 # Bankr Space Platform Agent — one agent, all spaces
 
-A single **Bankr Space Agent** works across every opted-in community. Fee recipients **or deployers** can enable it — USDC never flows to the deployer; x402 always settles to the fee recipient.
+A single **Bankr Space Agent** works across every opted-in community. Fee recipients **or deployers** can enable it — USDC never flows to the deployer.
+
+**Two x402 lanes:** Lane A (beneficiary fundraisers) → fee recipient wallet. Lane B (community agent pool) → platform agent wallet. See `aeon-skill-pack/AGENT-COMMUNITY-POOL.md`.
 
 **Public info:** `GET https://bankr.space/api/agent/platform`  
 **Worker list (cron):** `GET https://bankr.space/api/agent/platform-spaces` (Bearer `CRON_SECRET`)
@@ -45,7 +47,8 @@ A single **Bankr Space Agent** works across every opted-in community. Fee recipi
 
 | Setting | Who can enable | Effect |
 |---------|----------------|--------|
-| **Use Bankr Space Agent** | Deployer **or** verified fee recipient | Agent can post, pin, edit profile (after verify) |
+| **Use Bankr Space Agent** | Deployer **or** verified fee recipient | Agent can post milestones, pin agent posts (after verify) |
+| **Blocked keywords** | Fee recipient / team (`canEditProfile`) | Holder posts filtered; team removes posts via API |
 | **Run skill-linked fundraisers** | Verified fee recipient **only** | Agent may run QRCoin / 0xWork after x402 goal matched |
 
 Deployer rationale: funds never go to deployer; agent helps the community with moderation and tasks.
@@ -75,21 +78,22 @@ Tweet: `@bankrbot enable Bankr Space Agent on TMP space`
 
 | Rule | Detail |
 |------|--------|
-| **x402 USDC** | Always → **fee recipient wallet** — platform agent **never** receives USDC |
-| **Enable fundraisers** | **Fee recipient only** — agent never PATCHes fundraising |
-| **Request fundraisers** | Fee recipient **or trusted delegate** may ask the agent which skill pool to run |
-| **Skill execution** | Only when `platformAgentSkills` **and** campaign **matched** (`raisedUsd ≥ goalUsd` via x402) |
-| **Skill spend** | QRCoin / 0xWork txs sign from **fee recipient's Bankr account** — not agent wallet |
-| **Agent wallet** | Social moderation + orchestration — does **not** custody community USDC |
+| **Lane A x402** | Beneficiary fundraisers → **fee recipient wallet** |
+| **Lane B x402** | Community agent pool → **platform agent wallet** (`PLATFORM_AGENT_WALLET`) |
+| **Enable fundraisers (Lane A)** | **Fee recipient only** |
+| **Enable pool goals (Lane B)** | Deployer or fee recipient with `usePlatformAgent` |
+| **Skill execution** | `platformAgentSkills` + matched goal (`raisedUsd ≥ goalUsd`) |
+| **Lane A skill spend** | Fee recipient Bankr account |
+| **Lane B skill spend** | Platform agent wallet (community-funded pool) |
 
 ```text
 Deployer OR fee recipient  →  enables usePlatformAgent
-Fee recipient OR delegate  →  "run 0xWork pool for $SPACE"
-Fee recipient              →  enables fundraiser + platformAgentSkills
-Holders                    →  x402 USDC ($1/click) → fee recipient wallet
-When raised ≥ goal (matched):
-  Platform agent           →  executes QRCoin / 0xWork (fee recipient Bankr API)
-  Platform agent           →  posts tx + update on space (0xJobs tab, feed)
+Lane A: fee recipient     →  enables fundraiser + platformAgentSkills
+Lane B: deployer/fees     →  enables agent pool goals (QRCoin / 0xWork)
+Holders                    →  x402 ($1/click) → fee recipient (A) or agent wallet (B)
+When raised ≥ goal:
+  Platform agent           →  executes skill (wallet per lane)
+  Platform agent           →  posts tx + update; Lane B → POST /api/agent/pool-executed
 ```
 
 ---
@@ -113,14 +117,14 @@ GET https://bankr.space/api/agent/platform-spaces
 Authorization: Bearer {CRON_SECRET}
 ```
 
-For each space in `spaces[]`:
+For each space in `spaces[]` (priority order):
 
-1. **Social** — post briefing / milestone updates while `openFundraisers` exist
-2. **Skills** — for each `fundedCampaigns[]` where `readyForSkillExecution: true`:
-   - Load `SKILL-LINKED-FUNDRAISERS.md` (QRCoin vs 0xWork from campaign label)
-   - Sign txs with **fee recipient** Bankr API
-   - Post result on space (`source.client: agent`, `viaAgent: true`)
-3. Never send USDC to `platformAgentWallet`
+1. **Lane B execute** — `agentPool.readyForExecution` → spend from platform wallet → `pool-executed`
+2. **Lane B milestones** — `agentPool.open`
+3. **Lane A milestones** — `openFundraisers`
+4. **Lane A skills** — `fundedCampaigns` → fee recipient wallet
+
+See `aeon-skill-pack/bankr-space-worker/SKILL.md` for full loop.
 
 **Agent posts as:** `PLATFORM_AGENT_WALLET` with `x-wallet-address` header (must match platform agent wallet + `usePlatformAgent` + `verified`).
 

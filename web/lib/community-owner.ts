@@ -75,6 +75,8 @@ export type SpacePermissions = {
   /** Fee recipient only — skill-linked execution after x402 match */
   canEnablePlatformAgentSkills: boolean;
   canPinPosts: boolean;
+  /** Same as canPinPosts — delete posts, enforce moderation */
+  canModeratePosts: boolean;
   holds: boolean;
   balance: number;
   canPost: boolean;
@@ -142,6 +144,7 @@ export async function resolveSpacePermissions(
     canManagePlatformAgent,
     canEnablePlatformAgentSkills,
     canPinPosts,
+    canModeratePosts: canPinPosts,
     holds: holdResult.holds,
     balance: holdResult.balance,
     canPost,

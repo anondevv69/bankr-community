@@ -30,6 +30,8 @@ import {
 import { normalizeSocialLinks } from '@/lib/social-links';
 import { normalizeFundraising } from '@/lib/fundraising';
 import { normalizeBannerUrl } from '@/lib/banner-url';
+import { normalizeBlockedKeywords } from '@/lib/content-moderation';
+import { normalizeAgentPool } from '@/lib/agent-pool';
 import { fetchTokenMarketStats } from '@/lib/dexscreener';
 import { getWalletFromRequest, normalizeAddr } from '@/lib/utils';
 import { communityUrl } from '@/lib/site-url';
@@ -128,7 +130,11 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const touchesAgent =
       body.usePlatformAgent !== undefined || body.platformAgentSkills !== undefined;
 
-    if (touchesProfile && !permissions.canEditProfile) {
+    const touchesModeration = body.blockedKeywords !== undefined;
+
+    const touchesAgentPool = body.agentPool !== undefined;
+
+    if ((touchesProfile || touchesModeration) && !permissions.canEditProfile) {
       return NextResponse.json(
         {
           error:
@@ -152,7 +158,17 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       return NextResponse.json(
         {
           error:
-            'Only the verified fee recipient can enable skill-linked fundraisers (spends their Bankr wallet)',
+            'Only the verified fee recipient can authorize agent skill execution after goals are matched',
+        },
+        { status: 403 }
+      );
+    }
+
+    if (touchesAgentPool && !permissions.canManagePlatformAgent) {
+      return NextResponse.json(
+        {
+          error:
+            'Only the fee recipient or deployer can configure the community agent pool',
         },
         { status: 403 }
       );
@@ -161,6 +177,8 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (
       !touchesProfile &&
       !touchesAgent &&
+      !touchesModeration &&
+      !touchesAgentPool &&
       body.fundraising === undefined &&
       body.allowDeployerEdit === undefined &&
       body.trustedDelegates === undefined
@@ -231,6 +249,20 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         nextPlatformAgentSkills = false;
       }
     }
+
+    let nextAgentPool = normalizeAgentPool(current.agentPool);
+    if (body.agentPool !== undefined) {
+      if (!nextUsePlatformAgent) {
+        return NextResponse.json(
+          { error: 'Enable Use Bankr Space Agent before configuring the community agent pool' },
+          { status: 400 }
+        );
+      }
+      nextAgentPool = normalizeAgentPool(body.agentPool, { fromSave: true });
+    }
+    if (!nextUsePlatformAgent) {
+      nextAgentPool = normalizeAgentPool({ optedIn: false, campaigns: [] });
+    }
     if (body.platformAgentSkills !== undefined) {
       nextPlatformAgentSkills =
         nextUsePlatformAgent && Boolean(body.platformAgentSkills);
@@ -260,6 +292,10 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       feeRecipientAgent: nextFeeRecipientAgent,
       usePlatformAgent: nextUsePlatformAgent,
       platformAgentSkills: nextPlatformAgentSkills,
+      blockedKeywords:
+        body.blockedKeywords !== undefined
+          ? normalizeBlockedKeywords(body.blockedKeywords)
+          : current.blockedKeywords ?? [],
       customIconUrl:
         body.customIconUrl !== undefined
           ? normalizeBannerUrl(body.customIconUrl)
@@ -277,6 +313,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         body.fundraising !== undefined
           ? normalizeFundraising(body.fundraising, { fromSave: true })
           : current.fundraising,
+      agentPool: nextAgentPool,
     });
 
     const synced = await syncCommunityProfile(updated, { force: true });

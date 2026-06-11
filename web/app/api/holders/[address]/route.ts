@@ -43,6 +43,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       canManagePlatformAgent: permissions.canManagePlatformAgent,
       canEnablePlatformAgentSkills: permissions.canEnablePlatformAgentSkills,
       canPinPosts: permissions.canPinPosts,
+      canModeratePosts: permissions.canModeratePosts,
       verified: permissions.verified,
       allowDeployerEdit: permissions.allowDeployerEdit,
       trustedDelegates: permissions.trustedDelegates,

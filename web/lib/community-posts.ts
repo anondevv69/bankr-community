@@ -1,5 +1,6 @@
 import type { Community, PinnedPost, Post } from './types';
 import { normalizeFundraising } from './fundraising';
+import { normalizeAgentPool } from './agent-pool';
 
 export function normalizePinnedPosts(community: Community): PinnedPost[] {
   if (community.pinnedPosts?.length) {
@@ -62,11 +63,13 @@ export function mergeCommunityDefaults(community: Community): Community {
     dexSocialLinks: community.dexSocialLinks || {},
     profileSyncMeta: community.profileSyncMeta || {},
     fundraising: normalizeFundraising(community.fundraising),
+    agentPool: normalizeAgentPool(community.agentPool),
     allowDeployerEdit: community.allowDeployerEdit ?? false,
     trustedDelegates: community.trustedDelegates ?? [],
     feeRecipientAgent: community.feeRecipientAgent ?? null,
     usePlatformAgent: community.usePlatformAgent ?? false,
     platformAgentSkills: community.platformAgentSkills ?? false,
+    blockedKeywords: community.blockedKeywords ?? [],
     pinnedPosts,
     pinnedPostId: pinnedPosts[0]?.postId ?? null,
   };

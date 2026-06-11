@@ -69,6 +69,26 @@ export interface FundraisingState {
   campaigns: FundraisingCampaign[];
 }
 
+/** Bankr Skills the community agent may run after Lane B x402 pool is matched. */
+export type AgentPoolSkillId = 'qrcoin' | '0xwork';
+
+/** Community-funded agent goal (x402 → platform agent wallet). */
+export interface AgentPoolCampaign {
+  skillId: AgentPoolSkillId;
+  label: string;
+  goalUsd: number;
+  raisedUsd: number;
+  enabled: boolean;
+  /** Set when the platform worker reports skill execution. */
+  executedAt?: number | null;
+  executionNote?: string | null;
+}
+
+export interface AgentPoolState {
+  optedIn?: boolean;
+  campaigns: AgentPoolCampaign[];
+}
+
 export interface Community {
   tokenAddress: string;
   name: string;
@@ -89,6 +109,8 @@ export interface Community {
   usePlatformAgent?: boolean;
   /** Fee recipient authorizes platform agent to run skill-linked fundraisers when funded */
   platformAgentSkills?: boolean;
+  /** Holder posts containing these phrases (case-insensitive) are rejected */
+  blockedKeywords?: string[];
   description: string;
   /** Bankr launch image (ipfs://…), stored at create time when available */
   imageUri?: string | null;
@@ -130,6 +152,8 @@ export interface Community {
   socialLinks?: SocialLinks;
   /** Optional USDC fundraise campaigns (Dex profile, boost, custom) */
   fundraising?: FundraisingState;
+  /** Lane B — community x402 pool for platform agent skills (QRCoin, 0xWork) */
+  agentPool?: AgentPoolState;
   /** @deprecated use pinnedPosts */
   pinnedPostId?: string | null;
   pinnedPosts?: PinnedPost[];

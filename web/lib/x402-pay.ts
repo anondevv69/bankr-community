@@ -130,3 +130,80 @@ export async function paySpaceFund(
 
   return paid.data as PayResult;
 }
+
+async function proxyAgentPoolX402(
+  tokenAddress: string,
+  skillId: string,
+  amountUsd: number,
+  xPayment?: string
+): Promise<{ status: number; data: unknown }> {
+  const res = await fetch(`/api/communities/${tokenAddress}/agent-pool/x402`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skillId, amountUsd, xPayment }),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { status: res.status, data };
+}
+
+/** Lane B — community agent pool; x402 pay-to is PLATFORM_AGENT_WALLET. */
+export async function payAgentPoolFund(
+  walletAddress: Address,
+  tokenAddress: string,
+  skillId: string,
+  amountUsd: number
+): Promise<PayResult> {
+  const { status, data } = await proxyAgentPoolX402(tokenAddress, skillId, amountUsd);
+
+  const body = data as {
+    requiresPayment?: boolean;
+    x402Version?: number;
+    accepts?: unknown[];
+    error?: string;
+  };
+
+  const isQuote = status === 402 || (status === 200 && body.requiresPayment);
+  if (!isQuote) {
+    if (status >= 400) {
+      throw new Error(formatPayError(data, status));
+    }
+    return data as PayResult;
+  }
+
+  const { x402Version, accepts } = body;
+  if (!Array.isArray(accepts) || accepts.length === 0) {
+    throw new Error('No payment options returned by x402 endpoint');
+  }
+
+  let parsedPaymentRequirements;
+  try {
+    parsedPaymentRequirements = normalizeAccepts(accepts).map((x) =>
+      PaymentRequirementsSchema.parse(x)
+    );
+  } catch (err) {
+    throw new Error(
+      err instanceof Error
+        ? `Invalid x402 payment requirements: ${err.message}`
+        : 'Invalid x402 payment requirements'
+    );
+  }
+
+  const selected = selectPaymentRequirements(parsedPaymentRequirements, 'base', 'exact');
+
+  if (BigInt(selected.maxAmountRequired) > USDC_BASE_UNITS) {
+    throw new Error(`Payment amount exceeds maximum allowed ($${SPACE_FUND_X402_MAX_USDC} USDC)`);
+  }
+
+  const paymentHeader = await createPaymentHeader(
+    toX402Signer(walletAddress),
+    x402Version ?? 2,
+    selected
+  );
+
+  const paid = await proxyAgentPoolX402(tokenAddress, skillId, amountUsd, paymentHeader);
+  if (paid.status >= 400) {
+    throw new Error(formatPayError(paid.data, paid.status));
+  }
+
+  return paid.data as PayResult;
+}

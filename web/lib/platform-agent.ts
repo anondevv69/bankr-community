@@ -46,21 +46,17 @@ export function platformAgentMeta(): WalletAgentMeta {
 }
 
 /**
- * Money & authorization (non-negotiable):
- * - x402 USDC always settles to the fee recipient — never the platform agent wallet.
- * - Fee recipient enables fundraisers; trusted delegates may *request* skill fundraisers
- *   but cannot enable them or receive USDC.
- * - Platform agent only executes what the fee recipient opted into:
- *   - `usePlatformAgent` → social (post, pin, profile)
- *   - `platformAgentSkills` → QRCoin / 0xWork after a campaign is **matched** (raised ≥ goal)
- * - "Matched" means holders funded the goal via x402 into the fee recipient wallet; that
- *   authorizes the agent to spend from the fee recipient's Bankr account — not pay the agent.
+ * Money & authorization:
+ * - Lane A (beneficiary fundraisers): x402 → fee recipient; skill spend from fee recipient Bankr API.
+ * - Lane B (community agent pool): x402 → platform agent wallet; skill spend from agent wallet.
+ * - `usePlatformAgent` → worker polls space, posts milestones, optional skill execution.
+ * - `platformAgentSkills` → fee recipient authorizes on-chain skill runs after goals match.
  */
 export const PLATFORM_AGENT_MONEY_RULES = {
-  x402PayTo: 'fee-recipient-only' as const,
+  laneA: 'beneficiary-fundraiser-x402-to-fee-recipient' as const,
+  laneB: 'community-agent-pool-x402-to-platform-wallet' as const,
   fundraisingEnable: 'fee-recipient-only' as const,
+  agentPoolEnable: 'deployer-or-fee-recipient' as const,
   fundraiserRequest: 'fee-recipient-or-trusted-delegate' as const,
-  skillExecutionWallet: 'fee-recipient-bankr-account' as const,
   skillExecutionGate: 'platformAgentSkills-and-campaign-matched' as const,
-  platformAgentReceivesUsdc: false,
 };

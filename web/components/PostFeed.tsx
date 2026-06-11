@@ -231,6 +231,8 @@ function PostCard({
   onUpdate,
   pinningId,
   onTogglePin,
+  deletingId,
+  onDeletePost,
 }: {
   post: Post;
   posts: Post[];
@@ -251,6 +253,8 @@ function PostCard({
   onUpdate: () => void;
   pinningId: string | null;
   onTogglePin: (postId: string) => void;
+  deletingId: string | null;
+  onDeletePost: (postId: string) => void;
 }) {
   const { address } = useAppWallet();
   const isPinned = isPostPinned(pins, post.id);
@@ -355,6 +359,16 @@ function PostCard({
                 {pinningId === post.id ? 'Saving…' : isPinned ? 'Unpin' : 'Pin'}
               </button>
             ) : null}
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => onDeletePost(post.id)}
+                disabled={deletingId === post.id}
+                className="px-2.5 py-1 text-xs rounded-lg border border-red-500/40 text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                {deletingId === post.id ? 'Removing…' : 'Remove'}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -409,6 +423,8 @@ function PostCard({
               onUpdate={onUpdate}
               pinningId={pinningId}
               onTogglePin={onTogglePin}
+              deletingId={deletingId}
+              onDeletePost={onDeletePost}
             />
           ))}
         </div>
@@ -444,6 +460,7 @@ export function PostFeed({
   const isOxJobs = filter === 'oxjobs';
   const [sort, setSort] = useState<PostSort>('newest');
   const [pinningId, setPinningId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [tippingPostId, setTippingPostId] = useState<string | null>(null);
 
@@ -501,6 +518,23 @@ export function PostFeed({
       alert(err instanceof Error ? err.message : 'Pin failed');
     } finally {
       setPinningId(null);
+    }
+  }
+
+  async function deletePost(postId: string) {
+    if (!address || !canManage) return;
+    if (!confirm('Remove this post? Replies to a top-level post are removed too.')) return;
+    setDeletingId(postId);
+    try {
+      await apiFetch(`/api/communities/${tokenAddress}/posts/${postId}`, {
+        method: 'DELETE',
+        wallet: address,
+      });
+      onUpdate();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Remove failed');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -576,6 +610,8 @@ export function PostFeed({
               onUpdate={onUpdate}
               pinningId={pinningId}
               onTogglePin={togglePin}
+              deletingId={deletingId}
+              onDeletePost={deletePost}
             />
           ))}
         </div>
