@@ -77,16 +77,14 @@ function AgentPoolHistoryCard({ campaign }: { campaign: AgentPoolCampaignStatusV
       ) : null}
       {campaign.phase === 'stuck' ? (
         <p className="text-[11px] text-red-700 dark:text-red-300 mt-2 leading-snug">
-          USDC is funded but no 0xWork job is linked yet. Check the{' '}
-          <a href="/agent.md" className="text-accent-hover hover:underline">
-            Bankr Space Agent worker
-          </a>{' '}
-          on GitHub Actions.
+          USDC is funded but no 0xWork job is linked yet. bankr.space runs an automatic worker
+          every ~10 min — if this persists, confirm{' '}
+          <code className="text-[10px]">PLATFORM_AGENT_BANKR_API_KEY</code> is set on Vercel.
         </p>
       ) : campaign.phase === 'funded' ? (
         <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-2 leading-snug">
-          Payment recorded. The platform agent worker should post this job to 0xWork — status
-          updates automatically when the task appears.
+          Payment recorded. The bankr.space worker will post this to 0xWork automatically — status
+          updates when the task is linked.
         </p>
       ) : null}
     </div>

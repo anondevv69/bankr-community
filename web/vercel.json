@@ -10,6 +10,10 @@
     {
       "path": "/api/cron/agent-pool-verify",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/agent-pool-worker",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

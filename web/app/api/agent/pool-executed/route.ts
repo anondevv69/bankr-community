@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCommunities, setCommunities } from '@/lib/db';
-import { mergeCommunityDefaults } from '@/lib/community-posts';
-import { AGENT_POOL_SKILL_IDS, readStoredAgentPool } from '@/lib/agent-pool';
+import { AGENT_POOL_SKILL_IDS } from '@/lib/agent-pool';
+import { markAgentPoolExecuted } from '@/lib/mark-pool-executed';
 import { normalizeAddr } from '@/lib/utils';
 import type { AgentPoolSkillId } from '@/lib/types';
 
@@ -42,44 +41,22 @@ export async function POST(req: Request) {
     body.oxworkTaskId != null && Number.isFinite(Number(body.oxworkTaskId))
       ? Number(body.oxworkTaskId)
       : null;
-  const executionNote = note;
-
   if (!AGENT_POOL_SKILL_IDS.includes(skillId)) {
     return NextResponse.json({ error: 'Invalid skillId' }, { status: 400 });
   }
 
   try {
-    const communities = await getCommunities();
-    const index = communities.findIndex(
-      (c) => c.tokenAddress.toLowerCase() === tokenAddress
-    );
-    if (index === -1) {
-      return NextResponse.json({ error: 'Space not found' }, { status: 404 });
-    }
-
-    const current = mergeCommunityDefaults(communities[index]);
-    const pool = readStoredAgentPool(current.agentPool);
-    const updatedPool = {
-      ...pool,
-      campaigns: pool.campaigns.map((c) =>
-        c.skillId === skillId
-          ? {
-              ...c,
-              executedAt: Date.now(),
-              executionNote,
-              executionTxHash: txHash ?? c.executionTxHash ?? null,
-              oxworkTaskId: oxworkTaskId ?? c.oxworkTaskId ?? null,
-              jobLinkedAt: oxworkTaskId != null ? c.jobLinkedAt ?? Date.now() : c.jobLinkedAt,
-            }
-          : c
-      ),
-    };
-
-    communities[index] = mergeCommunityDefaults({
-      ...current,
-      agentPool: updatedPool,
+    const ok = await markAgentPoolExecuted({
+      tokenAddress,
+      skillId,
+      executionNote: note,
+      executionTxHash: txHash,
+      oxworkTaskId,
     });
-    await setCommunities(communities);
+
+    if (!ok) {
+      return NextResponse.json({ error: 'Space or campaign not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true, tokenAddress, skillId });
   } catch (err) {

@@ -89,8 +89,9 @@ WALLET=${PLATFORM_AGENT_WALLET}
 
 4. For each space in spaces[] (process in this order):
 
-   A. Lane B — execute ready community pool skills (HIGHEST PRIORITY)
-      - If agentPool.readyForExecution[] non-empty AND platformAgentSkills:
+   A. Lane B — execute ready community pool skills
+      - **SKIP if bankr.space cron handles it** — `GET $BASE/api/cron/agent-pool-worker` runs every 10 min on Vercel with `PLATFORM_AGENT_BANKR_API_KEY`. Only run manually if that endpoint is disabled.
+      - If agentPool.readyForExecution[] non-empty AND platformAgentSkills AND Vercel worker unavailable:
         - For each campaign (qrcoin | 0xwork):
           - **0xWork:** read `workBrief` from queue (or briefing `agentPool`). One line per task:
             `description — $bounty — Category`. Parse → `0xwork post`. Empty brief → SKILL-LINKED-FUNDRAISERS defaults.

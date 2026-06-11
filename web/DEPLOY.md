@@ -43,6 +43,9 @@ In Vercel → **Settings** → **Environment Variables**, add:
 | `PINATA_JWT` | [Pinata](https://pinata.cloud) JWT — banner/icon uploads **and** mirroring Bankr/Dex default images to IPFS (optional; URL paste still works without it) |
 | `NEXT_PUBLIC_X402_FUND_URL` | Shared Bankr x402 fund endpoint, e.g. `https://x402.bankr.bot/0x…/fund` — see [x402/README.md](../x402/README.md) |
 | `X402_FUND_WEBHOOK_SECRET` | Shared secret for legacy/manual credit route `/api/communities/{token}/fundraising/credit` |
+| `PLATFORM_AGENT_WALLET` | Base Account for Lane B community agent pool (same as Aeon) |
+| `PLATFORM_AGENT_BANKR_API_KEY` | `bk_…` Bankr Agent API key on that wallet — **executes funded 0xWork/QRCoin goals** via Vercel cron (`/api/cron/agent-pool-worker` every 10 min). Same value as Aeon `BANKR_API_KEY`. |
+| `NEXT_PUBLIC_PLATFORM_AGENT_UI` | `true` — show community agent UI on spaces |
 
 `KV_*` vars are set automatically when you connect KV.
 
