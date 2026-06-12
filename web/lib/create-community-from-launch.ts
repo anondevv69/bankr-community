@@ -18,6 +18,8 @@ export async function createCommunityFromLaunch(options: {
   tokenAddress: string;
   founderWallet: string;
   description?: string;
+  /** Completed TMP petition — mark space verified for the founder */
+  fromPetition?: boolean;
 }): Promise<{ community: Community; created: boolean; links: { communityPage: string } }> {
   const tokenAddress = normalizeAddr(options.tokenAddress);
   const wallet = options.founderWallet.toLowerCase();
@@ -40,7 +42,23 @@ export async function createCommunityFromLaunch(options: {
     (c) => c.tokenAddress.toLowerCase() === tokenAddress
   );
   if (existing) {
-    const merged = mergeCommunityDefaults(existing);
+    let merged = mergeCommunityDefaults(existing);
+    if (options.fromPetition && !merged.verified) {
+      merged = {
+        ...merged,
+        verified: true,
+        verifiedAt: Date.now(),
+        verifiedBy: wallet,
+      };
+      const communities = await getCommunities();
+      const idx = communities.findIndex(
+        (c) => c.tokenAddress.toLowerCase() === tokenAddress
+      );
+      if (idx !== -1) {
+        communities[idx] = merged;
+        await setCommunities(communities);
+      }
+    }
     return {
       community: withResolvedProfile(merged),
       created: false,
@@ -50,6 +68,7 @@ export async function createCommunityFromLaunch(options: {
 
   const { feeRecipient, deployer } = getLaunchOwnerWallets(launch);
   const isBeneficiary = await isTokenBeneficiary(wallet, tokenAddress);
+  const verifiedFromPetition = !!options.fromPetition;
 
   const community = mergeCommunityDefaults({
     tokenAddress: launch.tokenAddress,
@@ -62,9 +81,9 @@ export async function createCommunityFromLaunch(options: {
     trustedDelegates: [],
     usePlatformAgent: false,
     platformAgentSkills: false,
-    verified: isBeneficiary,
-    verifiedAt: isBeneficiary ? Date.now() : null,
-    verifiedBy: isBeneficiary ? wallet : null,
+    verified: verifiedFromPetition || isBeneficiary,
+    verifiedAt: verifiedFromPetition || isBeneficiary ? Date.now() : null,
+    verifiedBy: verifiedFromPetition || isBeneficiary ? wallet : null,
     description: description || `${launch.tokenName} holder space`,
     imageUri: launch.imageUri ?? null,
     socialLinks: {},

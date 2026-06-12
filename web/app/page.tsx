@@ -5,16 +5,18 @@ import { Header, Footer } from '@/components/Header';
 import { useEmbeddedBankr } from '@/components/EmbeddedBankrProvider';
 import { useAppWallet } from '@/hooks/useAppWallet';
 import { CommunityCard } from '@/components/CommunityCard';
+import { PetitionCard } from '@/components/PetitionCard';
 import { CreateCommunity } from '@/components/CreateCommunity';
 import { isNativeSpaceCommunity } from '@/lib/featured-community';
 import { isSiteAdminWallet } from '@/lib/site-admin';
 import { apiFetch } from '@/lib/wagmi';
 import type { Community, PetitionSpace, TokenMarketStats } from '@/lib/types';
 
-type VerifiedFilter = 'all' | 'verified' | 'unverified';
+type SpaceFilter = 'all' | 'petition' | 'verified' | 'unverified';
 
-const VERIFIED_FILTERS: Array<{ id: VerifiedFilter; label: string }> = [
+const SPACE_FILTERS: Array<{ id: SpaceFilter; label: string }> = [
   { id: 'all', label: 'All' },
+  { id: 'petition', label: 'Petition' },
   { id: 'verified', label: 'Verified' },
   { id: 'unverified', label: 'Unverified' },
 ];
@@ -25,7 +27,7 @@ export default function HomePage() {
   const [markets, setMarkets] = useState<Record<string, TokenMarketStats>>({});
   const [syncAt, setSyncAt] = useState<number | null>(null);
   const [filter, setFilter] = useState('');
-  const [verifiedFilter, setVerifiedFilter] = useState<VerifiedFilter>('all');
+  const [spaceFilter, setSpaceFilter] = useState<SpaceFilter>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingAddress, setDeletingAddress] = useState<string | null>(null);
@@ -96,26 +98,38 @@ export default function HomePage() {
     }
   }
 
-  const matchesSearch = (c: Community) => {
+  const matchesSearch = (text: string, symbol: string, extra?: string) => {
     if (!filter.trim()) return true;
     const q = filter.toLowerCase().replace(/\s+/g, '');
-    const name = c.name.toLowerCase().replace(/\s+/g, '');
-    const symbol = c.symbol.toLowerCase();
-    const address = c.tokenAddress.toLowerCase();
-    return name.includes(q) || symbol.includes(q) || address.includes(q);
+    return (
+      text.toLowerCase().replace(/\s+/g, '').includes(q) ||
+      symbol.toLowerCase().includes(q) ||
+      (extra?.toLowerCase().includes(q) ?? false)
+    );
   };
 
-  const matchesVerifiedTab = (c: Community) => {
-    if (verifiedFilter === 'verified') return c.verified;
-    if (verifiedFilter === 'unverified') return !c.verified;
+  const matchesCommunityTab = (c: Community) => {
+    if (spaceFilter === 'verified') return c.verified;
+    if (spaceFilter === 'unverified') return !c.verified;
+    if (spaceFilter === 'petition') return false;
     return true;
   };
 
+  const openPetitions = petitions.filter(
+    (p) => p.phase === 'petition' || p.phase === 'finalizing'
+  );
+
+  const filteredPetitions = openPetitions.filter((p) =>
+    matchesSearch(p.tokenName, p.tokenSymbol, p.tmpPetitionId)
+  );
+
   const featured = communities.find((c) => isNativeSpaceCommunity(c.tokenAddress));
-  const featuredVisible = !!featured && matchesSearch(featured);
+  const featuredVisible =
+    spaceFilter !== 'petition' && !!featured && matchesSearch(featured.name, featured.symbol, featured.tokenAddress);
 
   const tabFiltered = communities.filter(
-    (c) => matchesSearch(c) && matchesVerifiedTab(c)
+    (c) =>
+      matchesSearch(c.name, c.symbol, c.tokenAddress) && matchesCommunityTab(c)
   );
 
   const withoutFeatured = tabFiltered.filter(
@@ -127,6 +141,12 @@ export default function HomePage() {
       ? [featured, ...withoutFeatured]
       : tabFiltered;
 
+  const showPetitions = spaceFilter === 'petition';
+  const showCommunities = spaceFilter !== 'petition';
+  const gridEmpty =
+    (showCommunities ? displayList.length : 0) + (showPetitions ? filteredPetitions.length : 0) ===
+    0;
+
   return (
     <div className={`max-w-[1100px] mx-auto px-5 pb-16 ${embed.isEmbedded ? 'pt-4' : ''}`}>
       <Header syncUpdatedAt={syncAt} />
@@ -135,34 +155,10 @@ export default function HomePage() {
         <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
           <div>
             <div className="text-lg font-semibold">Spaces</div>
-            <div className="text-sm text-muted">Browse active token spaces</div>
+            <div className="text-sm text-muted">Browse token spaces and pre-launch petitions</div>
           </div>
           <CreateCommunity communities={communities} onCreated={load} />
         </div>
-
-        {petitions.length ? (
-          <div className="mb-8">
-            <div className="text-sm font-semibold mb-3">Petition spaces (pre-launch)</div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-              {petitions.map((p) => (
-                <a
-                  key={p.tmpPetitionId}
-                  href={`/community/petition/${p.tmpPetitionId}`}
-                  className="block p-4 rounded-xl border border-accent/30 bg-surface hover:border-accent transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-accent-hover">${p.tokenSymbol}</span>
-                    <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-accent/15 text-accent">
-                      Petition
-                    </span>
-                  </div>
-                  <div className="text-sm font-medium mt-1">{p.tokenName}</div>
-                  <p className="text-xs text-muted mt-2 line-clamp-2">{p.description}</p>
-                </a>
-              ))}
-            </div>
-          </div>
-        ) : null}
 
         <input
           className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm mb-4"
@@ -172,13 +168,13 @@ export default function HomePage() {
         />
 
         <div className="flex flex-wrap gap-1 p-1 bg-surface-2 border border-border rounded-xl mb-5 w-fit">
-          {VERIFIED_FILTERS.map((item) => (
+          {SPACE_FILTERS.map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => setVerifiedFilter(item.id)}
+              onClick={() => setSpaceFilter(item.id)}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                verifiedFilter === item.id
+                spaceFilter === item.id
                   ? 'bg-surface text-text shadow-sm border border-border'
                   : 'text-muted hover:text-text'
               }`}
@@ -194,25 +190,32 @@ export default function HomePage() {
           <div className="text-red-400 text-sm p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             {error}
           </div>
-        ) : displayList.length === 0 ? (
+        ) : gridEmpty ? (
           <p className="text-muted text-sm p-8 text-center border border-dashed border-border rounded-xl">
-            {communities.length === 0
-              ? 'No spaces yet. Click Create Space to search for a token and start one.'
-              : 'No spaces match your search or filter.'}
+            {spaceFilter === 'petition'
+              ? 'No open petitions — click Create Space → Petition to start one.'
+              : communities.length === 0 && openPetitions.length === 0
+                ? 'No spaces yet. Click Create Space to start a token space or petition.'
+                : 'No spaces match your search or filter.'}
           </p>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-            {displayList.map((c) => (
-              <CommunityCard
-                key={c.tokenAddress}
-                community={c}
-                market={markets[c.tokenAddress.toLowerCase()] || null}
-                featured={isNativeSpaceCommunity(c.tokenAddress)}
-                canDelete={isSiteAdmin}
-                onDelete={handleDeleteSpace}
-                deleting={deletingAddress === c.tokenAddress}
-              />
-            ))}
+            {showPetitions
+              ? filteredPetitions.map((p) => <PetitionCard key={p.tmpPetitionId} petition={p} />)
+              : null}
+            {showCommunities
+              ? displayList.map((c) => (
+                  <CommunityCard
+                    key={c.tokenAddress}
+                    community={c}
+                    market={markets[c.tokenAddress.toLowerCase()] || null}
+                    featured={isNativeSpaceCommunity(c.tokenAddress)}
+                    canDelete={isSiteAdmin}
+                    onDelete={handleDeleteSpace}
+                    deleting={deletingAddress === c.tokenAddress}
+                  />
+                ))
+              : null}
           </div>
         )}
       </section>

@@ -102,6 +102,7 @@ export async function upgradePetitionToCommunity(options: {
     tokenAddress,
     founderWallet: synced.founderWallet,
     description: synced.description,
+    fromPetition: true,
   });
 
   const postsMigrated = await migratePetitionPostsToCommunity(
@@ -144,6 +145,14 @@ export async function finalizeAllPendingPetitions(): Promise<{
 
       const existing = await getCommunity(synced.tokenAddress);
       if (existing) {
+        if (!existing.verified) {
+          await createCommunityFromLaunch({
+            tokenAddress: synced.tokenAddress,
+            founderWallet: synced.founderWallet,
+            description: synced.description,
+            fromPetition: true,
+          });
+        }
         await savePetitionSpace({ ...synced, phase: 'live', updatedAt: Date.now() });
         upgraded += 1;
         continue;
@@ -153,6 +162,7 @@ export async function finalizeAllPendingPetitions(): Promise<{
         tokenAddress: synced.tokenAddress,
         founderWallet: synced.founderWallet,
         description: synced.description,
+        fromPetition: true,
       });
       await migratePetitionPostsToCommunity(synced.tmpPetitionId, synced.tokenAddress);
       await savePetitionSpace({ ...synced, phase: 'live', updatedAt: Date.now() });
