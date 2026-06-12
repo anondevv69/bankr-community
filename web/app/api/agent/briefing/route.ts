@@ -138,7 +138,7 @@ export async function GET(req: Request) {
     for (const b of poidhBountyList.filter((row) => row.status === 'live')) {
       opportunities.push({
         type: 'poidh_bounty_live',
-        message: `$${community!.symbol} open bounty: ${b.title} — fund, claim, and vote on bankr.space Bounties tab.`,
+        message: `$${community!.symbol} open bounty: ${b.title} — ${b.url ?? 'see Bounties tab'}. Fund and claim on POIDH.`,
       });
     }
 
@@ -244,9 +244,10 @@ export async function GET(req: Request) {
               bounties: poidhBountyList,
               createBounty:
                 'POST /api/communities/{token}/poidh/request header x-wallet-address — token holder; seeds 0.001 ETH on Base',
-              humanUi: 'Bounties tab on space page — fund, submit claim, vote (MetaMask/Rabby on Base)',
+              humanUi:
+                'Bounties tab — status + create. Fund, claim, vote on poidh.xyz (each bounty has url).',
               agentNote:
-                'Agents create bounties via API only; users fund/claim/vote with EOA wallet on site. See skills/bankr-communities/POIDH-BOUNTIES.md',
+                'Agents create via POST …/poidh/request and list via GET …/poidh. For fund/claim/vote reply with bounty url. See POIDH-BOUNTIES.md',
             }
           : null,
       links: {

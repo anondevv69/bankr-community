@@ -252,7 +252,7 @@ async function spinUpNextPoidhBounty(
         mergedCommunity.tokenAddress,
         [
           `$${mergedCommunity.symbol} — open bounty live: ${target.title}`,
-          'Add funds on the Bounties tab, complete the task, post proof in community, then submit your claim.',
+          'Fund, submit proof, and claim on POIDH — link on the Bounties tab.',
           `On-chain bounty #${bountyId}`,
           communityUrl(mergedCommunity.tokenAddress),
         ].join('\n')

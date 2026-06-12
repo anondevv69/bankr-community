@@ -1,15 +1,11 @@
-# POIDH bounty actions — create, seed, list (tweet + terminal)
+# POIDH bounty actions — create, list (tweet + terminal)
 
-> **Mandatory for @bankrbot:** user says **add ETH**, **seed**, **fund bounty**, **create bounty**, **open bounty** → load `bankr-communities` → **read this file** → **HTTP GET/POST bankr.space** → reply with result + space URL.
+> **Mandatory for @bankrbot:** user says **create bounty**, **open bounty**, **list bounties** → load `bankr-communities` → **read this file** → **HTTP GET/POST bankr.space** → reply with result + links.
 >
-> **Do NOT** say "I don't have a bounty-funding tool" or offer raw POIDH contract calls for **seed** — use **`POST …/poidh/seed`** below.
->
-> **Do NOT** ask for a **recipient 0x address** — seed is **not** a wallet transfer. No `0x…` from the user. Call **`POST …/poidh/seed`** with `{ title, ethAmount }`; the **server issuer wallet** adds ETH to the POIDH pool.
+> **Fund / claim / vote / seed:** bankr.space only **lists status**. Reply with the bounty **`url`** from GET — user works on **poidh.xyz**. **Do NOT** ask for a recipient `0x` address.
 
 **Site:** `https://bankr.space`  
-**Writes:** header **`x-wallet-address: {user's linked Bankr wallet}`** — the wallet that holds the token (or fee recipient).
-
-**Not POIDH contract calls from the agent wallet for seed** — the **server issuer EOA** signs `joinOpenBounty` after your API call.
+**Writes (create only):** header **`x-wallet-address: {user's linked Bankr wallet}`** — wallet that holds the token.
 
 ---
 
@@ -17,7 +13,7 @@
 
 ```
 GET https://bankr.space/api/agent/link?q=SPACE
-→ response body is plain text URL; token address is the 0x… in the path
+→ plain text URL; token address is the 0x… in the path
 
 GET https://bankr.space/api/agent/briefing?symbol=SPACE
 → JSON: community.tokenAddress, communityLink
@@ -33,6 +29,7 @@ Known tickers in **`known-communities.json`** (TMP, ARCHIVE, PMFI, SPACE).
 ```text
 @bankrbot what bounties are on $SPACE?
 @bankrbot list $TMP open bounties
+@bankrbot how do I fund the $SPACE bounty?
 ```
 
 **Request:**
@@ -40,85 +37,22 @@ Known tickers in **`known-communities.json`** (TMP, ARCHIVE, PMFI, SPACE).
 GET https://bankr.space/api/communities/{tokenAddress}/poidh
 ```
 
-**Response (JSON) — fields you need:**
+**Response fields:**
 
 | Field | Meaning |
 |-------|---------|
-| `bounties[]` | Each row: `id`, `title`, `status`, **`poidhBountyId`** (on-chain, use for seed), **`poidhDisplayId`** (poidh.xyz URL id, e.g. 1229 = on-chain 243), `amountWei`, `onChainActive`, **`seedable`** |
-| `bountiesTabUrl` | Link for user |
+| `bounties[]` | `title`, `status` (`live` / `pending`), `onChainActive` (`false` = paid out), `amountWei`, **`url`** (poidh.xyz link when live) |
+| `bountiesTabUrl` | bankr.space Bounties tab (status + create) |
 
-**ID rule for POST seed:** use **`poidhBountyId`** (243) **or** `poidhDisplayId` (1229) **or** `title` — server normalizes. Formula: `poidhDisplayId = poidhBountyId + 986` on Base.
+**Reply:**
+- Summarize each bounty: title, **Open** or **Paid out**, pool ETH if known.
+- For live bounties: paste **`url`** on its own line — "Fund, submit proof, and claim on POIDH."
+- Also paste `bountiesTabUrl` or `communityLink` for creating new bounties.
 
-**Do not** treat `onChainActive: null` as seedable — means RPC read failed, retry GET.
-
-**Reply:** summarize live bounties (title, pool ETH if `amountWei`, on-chain id) + paste `bountiesTabUrl` or `communityLink` on its own line.
-
----
-
-## Seed pool ETH — **add ETH to bounty** (POST) ← use for "add 0.01 ETH to…"
-
-**User says:**
-```text
-@bankrbot add 0.01 ETH to the $SPACE Test bounty
-@bankrbot seed 0.005 ETH to bounty "make a split" on $TMP
-@bankrbot fund the $SPACE Test bounty with 0.01 ETH
-```
-
-**Meaning:** platform **issuer wallet** adds ETH to the POIDH pool (`joinOpenBounty`). Max **0.1 ETH** per request. User must **hold the token** (`canPost`).
-
-**Steps (execute in order — do not skip HTTP):**
-
-```
-1. Parse ethAmount from user (e.g. 0.01). Default none — must be explicit.
-2. Parse ticker ($SPACE) and optional bounty title ("Test bounty").
-3. Resolve tokenAddress (briefing or link API).
-4. GET /api/communities/{tokenAddress}/poidh
-   → find bounty where status=live, title matches (case-insensitive substring)
-   → if no match but one live bounty, use it; else ask which title
-5. POST /api/communities/{tokenAddress}/poidh/seed
-   Header: x-wallet-address: {linked}
-   Body JSON (either):
-     { "title": "Test bounty", "ethAmount": "0.01" }
-     { "bountyId": 243, "ethAmount": "0.01" }
-6. On success JSON:
-   → reply: "Added {ethAmount} ETH to {title} (bounty #{bountyId}). Tx: {txHash}"
-   → paste bountiesUrl or communityLink on its own line
-7. On error → paste error message + Bounties tab link
-```
-
-**curl (terminal — same as agent should POST):**
-
+**curl:**
 ```bash
-TOKEN=0xef703b860a6d422fa00cc67bbbb2662297cb6ba3
-WALLET=0xYOUR_LINKED_WALLET
-
-curl -sS "https://bankr.space/api/communities/${TOKEN}/poidh"
-
-curl -sS -X POST "https://bankr.space/api/communities/${TOKEN}/poidh/seed" \
-  -H "x-wallet-address: ${WALLET}" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test bounty","ethAmount":"0.01"}'
+curl -sS "https://bankr.space/api/communities/0xef703b860a6d422fa00cc67bbbb2662297cb6ba3/poidh"
 ```
-
-**Success response example:**
-
-```json
-{
-  "success": true,
-  "txHash": "0x…",
-  "bountyId": 243,
-  "ethAmount": "0.01",
-  "mode": "issuer_seed",
-  "message": "Added 0.01 ETH to bounty #243…",
-  "bountiesUrl": "https://www.bankr.space/community/0xef70…#bounties"
-}
-```
-
-**Forbidden replies:**
-- "I don't have a bounty-funding tool"
-- "what's the recipient address?" / "need an 0x… to send ETH" — **wrong for seed**
-- "drop the contract address and I'll hit it directly" (for seed — use API above)
-- Sending user to poidh.xyz to fund
 
 ---
 
@@ -140,42 +74,28 @@ Content-Type: application/json
 }
 ```
 
-Issuer seeds **0.001 ETH** and opens on-chain. Reply with success message + space URL.
+Issuer seeds **0.001 ETH** and opens on POIDH. Reply with success message + Bounties tab URL. When live, GET again for **`url`**.
 
 ---
 
-## User funds with own wallet (guide only — no POST)
+## Fund / seed / claim / vote (guide only — no bankr.space POST)
 
-When user wants **their** ETH in the pool (their voting power):
+When user wants to **add ETH**, **submit proof**, **claim**, or **vote**:
 
 ```
-1. GET …/poidh → bounty title + link
-2. Reply:
-   Open Bounties tab → select bounty → Add funds → MetaMask or Rabby on Base → confirm.
-   https://bankr.space/community/{tokenAddress}
+1. GET …/poidh
+2. Find matching bounty → use `url` (https://poidh.xyz/base/bounty/…)
+3. Reply:
+   Open on POIDH to fund, submit proof, and manage claims:
+   {url}
 ```
 
-**Do not** POST seed for this case unless user explicitly asks the **platform/agent to add** ETH.
+**POIDH handles payout rules** — single funder can pay out directly; multiple funders vote 48h. Do not explain bankr.space MetaMask flows.
 
----
-
-## Finalize claim (POST propose — after user submitted claim on site)
-
-```http
-POST https://bankr.space/api/communities/{tokenAddress}/poidh/propose
-x-wallet-address: 0x…
-{ "bountyId": 243, "claimId": 1 }
-```
-
-Only **claim submitter's** linked wallet. Issuer accepts or starts vote.
-
----
-
-## Submit claim / vote (browser only)
-
-`createClaim`, `voteClaim` require user **EOA on bankr.space** — no agent API.
-
-**Tweet + photo:** user cannot @bankrbot "submit this image as my claim" today — POIDH needs a **proof URL** on-chain signed by user EOA. Workflow: post proof on X → copy **tweet URL** → Submit claim on Bounties tab with that link. Bot may guide but cannot sign `createClaim`.
+**Forbidden replies:**
+- "what's the recipient address?" / "need an 0x… to send ETH"
+- "Add funds on the Bounties tab" (removed — use poidh.xyz)
+- "I don't have a bounty-funding tool" — link to POIDH `url` instead
 
 ---
 
@@ -185,8 +105,8 @@ Only **claim submitter's** linked wallet. Issuer accepts or starts vote.
 |------|---------|
 | 401 | Missing x-wallet-address |
 | 403 | User doesn't hold token |
-| 404 | Bounty not found / not live yet |
+| 404 | Bounty not found |
 | 409 | Duplicate pending create (same title opening) |
 | 503 | POIDH issuer not configured on server |
 
-If bounty `status: pending` → tell user to wait ~1 min and retry seed, or refresh Bounties tab.
+If bounty `status: pending` → tell user to wait ~1 min, refresh Bounties tab, then GET for `url`.

@@ -21,9 +21,8 @@
 | what **opportunities** on spaces? | briefing → `opportunities[]` | unverified, first post, create space, **fundraising_open** |
 | any **fundraising** on **$TMP**? | `GET /api/communities/{token}/fundraising` or briefing → `fundraising.open[]` | list open goals + progress |
 | **fund** / **contribute** to **TMP** Dex profile | **`FUNDRAISING.md`** → fundraising GET → space URL (pay on site) |
-| **fund** / **add ETH** to **$SPACE** bounty | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → **`POST …/poidh/seed`** |
-| **seed** **0.01 ETH** to **$SPACE** **Test bounty** | Same — parse amount + title from tweet → POST seed |
-| **how do I fund** a bounty (my wallet) | **`POIDH-BOUNTY-ACTIONS.md`** → guide Bounties tab + MetaMask |
+| **fund** / **add ETH** / **seed** **$SPACE** bounty | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → paste bounty **`url`** (poidh.xyz) |
+| **how do I fund** / **claim** / **vote** on a bounty | Same — GET → paste **`url`**; POIDH handles payout rules |
 | **completed** fundraisers on **$TMP**? | briefing → `fundraising.completed[]` | past goals only |
 
 ---

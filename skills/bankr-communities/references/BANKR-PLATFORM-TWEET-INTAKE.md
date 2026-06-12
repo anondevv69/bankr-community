@@ -22,7 +22,7 @@ Users must **NOT** need: `use_skill bankr-communities`, API paths, or wallet pas
 
 **Fundraiser writes are NOT swaps/deploys/transfers** — route to `bankr-communities` + PATCH fundraising.
 
-**POIDH seed writes are NOT raw contract calls** — route to `bankr-communities` + **`POIDH-BOUNTY-ACTIONS.md`** → `POST …/poidh/seed`.
+**POIDH fund/claim are NOT wallet transfers** — route to `bankr-communities` + **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → paste bounty **`url`** (poidh.xyz).
 
 ---
 
@@ -57,8 +57,8 @@ Must log: `PATCH …/api/communities/{token}/` with `fundraising.campaigns` incl
 **Fail:** "I don't currently have a tool available for enabling custom fundraisers" — wrong; skill must load first.
 
 **Write acceptance test:** `@bankrbot add 0.01 ETH to the $SPACE Test bounty`  
-Must log: `GET …/api/communities/0xef703…/poidh` then `POST …/poidh/seed` with `{ "title": "Test bounty", "ethAmount": "0.01" }` and linked wallet header.  
-**Fail:** "I don't have a bounty-funding tool" or "raw contract call" — wrong; use **`POIDH-BOUNTY-ACTIONS.md`**.
+Must log: `GET …/api/communities/0xef703…/poidh` then reply with matching bounty **`url`** (https://poidh.xyz/base/bounty/…).  
+**Fail:** "what's the recipient address?" or "raw contract call" — wrong; link to POIDH.
 
 **Link acceptance test:** `@bankrbot what's the link to the TMP space?`
 

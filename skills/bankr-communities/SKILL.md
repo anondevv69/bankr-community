@@ -1,9 +1,9 @@
 ---
 name: bankr-communities
-version: 1.18.0
+version: 1.19.0
 description: >-
-  Bankr Space on bankr.space. POIDH seed: POST …/poidh/seed — NOT a wallet transfer, never ask recipient 0x.
-  add ETH / seed bounty → POIDH-BOUNTY-ACTIONS.md. NOT Twitter audio Spaces.
+  Bankr Space on bankr.space. POIDH: create/list on bankr.space; fund/claim/vote on poidh.xyz (link from GET …/poidh).
+  NOT Twitter audio Spaces.
 siteUrl: https://bankr.space
 communitiesSiteUrl: https://bankr.space
 COMMUNITIES_SITE_URL: https://bankr.space
@@ -36,7 +36,7 @@ User says **verify**, **post**, **pin**, **add links**, **update profile** → r
 | **pin** latest post in **TMP** | `POST …/pin-post` `{ postId, action: "pin" }` |
 | **fund** / **contribute** to **TMP** space fundraiser | Read **`FUNDRAISING.md`** → `GET …/fundraising` or briefing → reply progress + space URL |
 | **create bounty** / **open bounty** for **$SPACE** | Read **`POIDH-BOUNTY-ACTIONS.md`** → `POST …/poidh/request` |
-| **add ETH** / **seed** / **fund** **$SPACE** bounty | Read **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → **`POST …/poidh/seed`** — **never** refuse as missing tool |
+| **add ETH** / **seed** / **fund** / **claim** / **vote** on bounty | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → paste bounty **`url`** (poidh.xyz) |
 | **list** bounties on **$SPACE** | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` |
 | any **fundraising** on **$ARCHIVE**? | `GET …/fundraising` or briefing → `fundraising.open[]` |
 
@@ -134,7 +134,7 @@ Users say natural language on **tweet** or **terminal**. Bankr must **`use_skill
 | **QRCoin** fundraiser for **SPACE** | **`SKILL-LINKED-FUNDRAISERS.md`** → custom fundraiser + [qrcoin skill](https://skills.bankr.bot/skills/qrcoin) |
 | **0xWork** bagwork / bounties for **TMP** | **`SKILL-LINKED-FUNDRAISERS.md`** → custom fundraiser + [0xwork skill](https://skills.bankr.bot/skills/0xwork) |
 
-**Forbidden:** ask user for skill name · ask wallet if X↔Bankr linked · invent space data without API call · say "can't post to X spaces" or "post manually" (see **NOT-TWITTER-X-SPACES.md**) · say **"I don't have a tool for enabling fundraisers"** without loading this skill and PATCHing (see **BENEFICIARY-ACTIONS.md**) · say **"I don't have a bounty-funding tool"** or offer raw POIDH contract calls when user asks **add/seed ETH to bounty** — use **POIDH-BOUNTY-ACTIONS.md** → `POST …/poidh/seed`.
+**Forbidden:** ask user for skill name · ask wallet if X↔Bankr linked · invent space data without API call · say "can't post to X spaces" or "post manually" (see **NOT-TWITTER-X-SPACES.md**) · say **"I don't have a tool for enabling fundraisers"** without loading this skill and PATCHing (see **BENEFICIARY-ACTIONS.md**) · ask for recipient **0x** to fund a bounty — use **POIDH-BOUNTY-ACTIONS.md** → `GET …/poidh` → paste bounty **`url`** (poidh.xyz).
 
 ---
 
@@ -149,7 +149,7 @@ if message contains "link" OR "url" OR "where is" + space or community/token:
   5. If HTTP fails → known-communities.json → NEVER empty / "couldn't generate"
 else if space intent (verify, post, pin, profile, update links, members, latest, fund, fundraiser, fundraising, contribute, enable fundraiser, start fundraiser, custom fundraiser, bounty, bounties, poidh, seed bounty, add eth to bounty):
   1. use_skill("bankr-communities")     ← BEFORE swaps/deploys/transfers
-  2. add eth / seed / fund + bounty (not USDC fundraiser) → POIDH-BOUNTY-ACTIONS.md → GET poidh → POST poidh/seed
+  2. add eth / seed / fund / claim / vote + bounty (not USDC fundraiser) → POIDH-BOUNTY-ACTIONS.md → GET poidh → paste bounty url (poidh.xyz)
   3. create/open bounty → POIDH-BOUNTY-ACTIONS.md → POST poidh/request
   4. enable/start/turn on + fundraiser → BENEFICIARY-ACTIONS.md (Enable fundraiser) → PATCH fundraising
   5. Other writes → BENEFICIARY-ACTIONS.md

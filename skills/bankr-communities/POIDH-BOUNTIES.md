@@ -1,47 +1,37 @@
 # POIDH open bounties on Bankr Space
 
-Token holders create **crowdfunded outcome bounties** on **bankr.space** — funded in **ETH on Base** via POIDH (not x402, not USDC agent pool).
+Token holders create **crowdfunded outcome bounties** on **bankr.space** — opened on **POIDH** (ETH on Base, not x402, not USDC agent pool).
 
-> **@bankrbot execute create / seed / list:** read **`POIDH-BOUNTY-ACTIONS.md`** first — step-by-step GET/POST, curl, response fields, forbidden replies.
+> **@bankrbot execute create / list:** read **`POIDH-BOUNTY-ACTIONS.md`** first.
+
+## Model
+
+| Where | What |
+|-------|------|
+| **bankr.space** | Create bounties (UI or API). **List status** — open or paid out. Link to POIDH. |
+| **poidh.xyz** | **Everything else** — add funds, submit proof, claim, vote, withdraw. POIDH handles payout rules. |
+
+**Do not** guide users to fund/claim/vote on bankr.space — send them to the bounty **`url`** from `GET …/poidh`.
 
 ## User intents
 
 | User says | Agent does |
 |-----------|------------|
 | create a bounty for **$SPACE** | **`POIDH-BOUNTY-ACTIONS.md`** → `POST …/poidh/request` |
-| **add** / **seed** ETH to bounty | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → **`POST …/poidh/seed`** |
-| what's the **SPACE** bounty? | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` |
-| fund bounty (user's wallet) | Guide to Bounties tab + MetaMask (see actions doc) |
-| submit proof / claim | User on Bounties tab — EOA required |
-| vote on bounty claim | User on Bounties tab — EOA required |
+| what's the **SPACE** bounty? / list bounties | **`POIDH-BOUNTY-ACTIONS.md`** → `GET …/poidh` → reply status + **poidh.xyz link** |
+| **add** / **fund** / **seed** ETH to bounty | `GET …/poidh` → paste bounty **`url`** (poidh.xyz) — user funds on POIDH |
+| submit proof / claim / vote | Paste bounty **`url`** — user works on POIDH |
 
-## Funding (two paths)
+## POIDH payout rules (explain when asked)
 
-See **`POIDH-BOUNTY-ACTIONS.md`** for full execution. Summary:
+POIDH decides on their site — bankr.space does not run claims or votes.
 
-### A — User adds their own ETH (voting power = their share)
+- **Single funder** (usually just the 0.001 ETH seed): claim can be accepted and paid out directly.
+- **Multiple funders**: after someone submits proof, contributors **vote 48h** (weighted by ETH contributed) before payout.
 
-Guide to Bounties tab + MetaMask/Rabby on Base.
-
-### B — Platform issuer seeds more ETH (**agent executes POST seed**)
-
-```http
-POST https://bankr.space/api/communities/{tokenAddress}/poidh/seed
-x-wallet-address: 0x…
-Content-Type: application/json
-
-{ "title": "Test bounty", "ethAmount": "0.01" }
-```
-
-Cap: **0.1 ETH** per request. Example tweet: `@bankrbot add 0.01 ETH to the $SPACE Test bounty`
-
-**Agent must NOT** say it lacks a funding tool — this endpoint is the tool.
-
----
+Full guide: https://words.poidh.xyz/poidh-open-bounties-guide
 
 ## Create bounty (token holder)
-
-Details in **`POIDH-BOUNTY-ACTIONS.md`**. Quick reference:
 
 ```http
 POST https://bankr.space/api/communities/{tokenAddress}/poidh/request
@@ -51,27 +41,21 @@ Content-Type: application/json
 { "title": "Task name", "description": "Instructions + proof requirement" }
 ```
 
+Issuer seeds **0.001 ETH** and opens on-chain. Reply with success + space Bounties tab URL.
+
 ## List bounties
 
 ```http
 GET https://bankr.space/api/communities/{tokenAddress}/poidh
 ```
 
+Each live bounty has **`url`** → `https://poidh.xyz/base/bounty/{displayId}` (display id = on-chain id + 986).
+
 ## Agent limitations
 
-- Agents **cannot** sign POIDH txs with the **user's** wallet (fund, claim, vote) — user needs **EOA on Base** (MetaMask/Rabby) on bankr.space.
-- Agents **can** seed pool ETH via **`POST …/poidh/seed`** (issuer wallet, max 0.1 ETH/request).
-- **Do not** send users to poidh.xyz to work — everything is on bankr.space Bounties tab.
-- Optional reference: `View on poidh.xyz` link on each bounty card.
-
-## Flow (human)
-
-1. Holder creates bounty (API or Bounties tab UI)
-2. Anyone adds ETH → **Add funds** (voting power = share of pool) — or holder asks agent to **seed**
-3. Worker completes task → **Submit claim** + proof URL
-4. Claim submitter clicks **Accept & pay** (issuer-only pool) or **Request vote** (multiple funders) → 48h vote only when needed
-5. Funders **Vote yes/no** on bankr.space
-6. After deadline → **Resolve vote** → winner withdraws ETH
+- Agents **can** create bounties (`POST …/poidh/request`) and list status (`GET …/poidh`).
+- Agents **cannot** sign POIDH txs for the user — fund/claim/vote on **poidh.xyz**.
+- **Do not** ask for a recipient `0x` to fund a bounty — link to POIDH instead.
 
 ## Briefing
 
@@ -79,9 +63,10 @@ GET https://bankr.space/api/communities/{tokenAddress}/poidh
 GET https://bankr.space/api/agent/briefing?token=0x…
 ```
 
-Check space page Bounties tab; `poidhBounties` in community JSON when enabled.
+Check `poidhBounties` in JSON; opportunities include live bounty titles + poidh.xyz links.
 
 ## Links
 
-- Space bounties: `https://bankr.space/community/{tokenAddress}` → **Bounties** tab
+- Space bounties: `https://bankr.space/community/{tokenAddress}` → **Bounties** tab (status + create)
+- POIDH app: https://poidh.xyz/base
 - POIDH guide: https://words.poidh.xyz/poidh-open-bounties-guide

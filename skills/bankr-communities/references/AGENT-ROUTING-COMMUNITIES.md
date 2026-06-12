@@ -10,7 +10,7 @@
 
 **Writes (same routing as post-in-space):** verify, post, pin, update profile, add links, **enable/start/turn on fundraiser** → **`BENEFICIARY-ACTIONS.md`**.
 
-**POIDH bounties (add ETH / seed / create / list):** → **`POIDH-BOUNTY-ACTIONS.md`** — `GET …/poidh`, `POST …/poidh/seed`, `POST …/poidh/request`. Never "no bounty-funding tool."
+**POIDH bounties (create / list / fund / claim):** → **`POIDH-BOUNTY-ACTIONS.md`** — create `POST …/request`, list `GET …/poidh`, fund/claim reply with bounty **`url`** (poidh.xyz). Never ask recipient 0x.
 
 **Other reads:** space (user may say community), members, posts, latest on $TICKER space, start space.
 

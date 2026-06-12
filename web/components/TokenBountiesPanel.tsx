@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { PoidhOpenBountyGuide } from '@/components/PoidhOpenBountyGuide';
-import { PoidhBountyActions } from '@/components/PoidhBountyActions';
 import { useAppWallet } from '@/hooks/useAppWallet';
 import { poidhBountyUrl } from '@/lib/poidh-api';
 import { formatEthPoolLabel } from '@/lib/poidh-format';
@@ -29,8 +28,6 @@ type SpinUpView = {
   lastError?: string | null;
 };
 
-type OpenPanel = { bountyId: string; section: 'fund' | 'claim' } | null;
-
 function truncateAddress(addr: string | null): string | null {
   if (!addr) return null;
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -42,14 +39,9 @@ function bountyExternalUrl(bounty: BountyView): string | null {
   return null;
 }
 
-function bountyIsOpen(bounty: BountyView): boolean {
-  if (bounty.status !== 'live') return false;
-  return bounty.onChainActive !== false;
-}
-
 function statusLabel(bounty: BountyView, spinUp: SpinUpView | null): string {
   if (bounty.status === 'live') {
-    return bounty.onChainActive === false ? 'Paid out' : 'Live on POIDH';
+    return bounty.onChainActive === false ? 'Paid out' : 'Open';
   }
   if (spinUp?.agentJobRunning) return 'Opening on-chain…';
   return 'Opening on-chain';
@@ -67,7 +59,7 @@ function statusClass(bounty: BountyView): string {
 
 function pendingHint(spinUp: SpinUpView | null): string {
   if (spinUp?.message) return spinUp.message;
-  return 'The issuer wallet creates an open bounty on Base (0.001 ETH seed). This page refreshes automatically.';
+  return 'Opening on POIDH (0.001 ETH seed). This page refreshes automatically.';
 }
 
 function pendingHintClass(spinUp: SpinUpView | null): string {
@@ -92,7 +84,6 @@ export function TokenBountiesPanel({
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
-  const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
 
   const load = useCallback(
     async (options?: { triggerSpinUp?: boolean }) => {
@@ -150,21 +141,13 @@ export function TokenBountiesPanel({
       });
       setTitle('');
       setDescription('');
-      setHint(data.message || 'Bounty created.');
+      setHint(data.message || 'Bounty created — opening on POIDH…');
       await load({ triggerSpinUp: true });
     } catch (err) {
       setHint(err instanceof Error ? err.message : 'Could not create bounty');
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function togglePanel(bountyId: string, section: 'fund' | 'claim') {
-    setOpenPanel((current) =>
-      current?.bountyId === bountyId && current.section === section
-        ? null
-        : { bountyId, section }
-    );
   }
 
   if (loading) {
@@ -180,8 +163,16 @@ export function TokenBountiesPanel({
       <div className="p-4 rounded-xl border border-border bg-surface space-y-1">
         <div className="text-sm font-semibold">Community bounties for ${symbol}</div>
         <p className="text-[11px] text-muted leading-relaxed">
-          Create a task → fund in ETH → do the work → submit proof → contributors vote 48h.
-          Everything happens here on bankr.space.
+          Create tasks here or via @bankrbot. Fund, submit proof, claim, and vote on{' '}
+          <a
+            href="https://poidh.xyz/base"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent-hover hover:underline"
+          >
+            poidh.xyz
+          </a>
+          . This tab shows what&apos;s open or paid out.
         </p>
         <PoidhOpenBountyGuide collapsible />
       </div>
@@ -191,7 +182,7 @@ export function TokenBountiesPanel({
           <div className="text-sm font-semibold">Create a bounty</div>
           <p className="text-[11px] text-muted">
             Describe anything the community should fund — Dex profile, boost, shoutout, listing,
-            design work, etc.
+            design work, etc. It opens on POIDH automatically.
           </p>
           <input
             className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm"
@@ -229,15 +220,12 @@ export function TokenBountiesPanel({
 
       {bounties.length ? (
         <div className="space-y-3">
-          <div className="text-sm font-semibold">Open bounties</div>
+          <div className="text-sm font-semibold">Bounties</div>
           {bounties.map((bounty) => {
             const externalUrl = bountyExternalUrl(bounty);
             const poolLabel = formatEthPoolLabel(bounty.amountWei);
-            const isOpen = bountyIsOpen(bounty);
             const showDescription =
-              bounty.description &&
-              bounty.description.trim() !== bounty.title.trim();
-            const panelOpen = openPanel?.bountyId === bounty.id;
+              bounty.description && bounty.description.trim() !== bounty.title.trim();
 
             return (
               <div
@@ -260,7 +248,7 @@ export function TokenBountiesPanel({
                       </p>
                     ) : null}
                     {showDescription ? (
-                      <p className="text-xs text-muted mt-1 whitespace-pre-wrap">
+                      <p className="text-xs text-muted mt-1 whitespace-pre-wrap line-clamp-4">
                         {bounty.description}
                       </p>
                     ) : null}
@@ -273,62 +261,16 @@ export function TokenBountiesPanel({
                 </div>
 
                 {bounty.poidhBountyId != null && bounty.status === 'live' ? (
-                  <>
-                    {isOpen ? (
-                      <>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => togglePanel(bounty.id, 'claim')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                              panelOpen && openPanel?.section === 'claim'
-                                ? 'bg-accent text-white'
-                                : 'bg-accent text-white'
-                            }`}
-                          >
-                            Submit claim
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => togglePanel(bounty.id, 'fund')}
-                            className={`px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:border-accent bg-surface-2 ${
-                              panelOpen && openPanel?.section === 'fund' ? 'border-accent' : ''
-                            }`}
-                          >
-                            Add funds
-                          </button>
-                        </div>
-
-                        <PoidhBountyActions
-                          tokenAddress={tokenAddress}
-                          symbol={symbol}
-                          poidhBountyId={bounty.poidhBountyId}
-                          poolAmountWei={bounty.amountWei}
-                          onChainActive={bounty.onChainActive}
-                          showFundForm={panelOpen && openPanel?.section === 'fund'}
-                          showClaimForm={panelOpen && openPanel?.section === 'claim'}
-                          compact
-                          onAction={() => void load()}
-                        />
-                      </>
-                    ) : (
-                      <p className="text-[11px] text-muted">This bounty has been paid out.</p>
-                    )}
-
-                    {externalUrl ? (
-                      <p className="text-[10px] text-muted">
-                        <a
-                          href={externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-accent-hover hover:underline"
-                        >
-                          View on poidh.xyz ↗
-                        </a>
-                        <span className="text-muted"> — optional, all actions work here</span>
-                      </p>
-                    ) : null}
-                  </>
+                  externalUrl ? (
+                    <a
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-accent text-white rounded-lg hover:opacity-90"
+                    >
+                      Open on poidh.xyz ↗
+                    </a>
+                  ) : null
                 ) : (
                   <p className={`text-[11px] leading-relaxed ${pendingHintClass(spinUp)}`}>
                     {pendingHint(spinUp)}

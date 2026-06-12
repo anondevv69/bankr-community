@@ -18,12 +18,12 @@ function communityProofBlock(symbol: string, tokenAddress: string): string {
     `Token: $${symbol.replace(/^\$/, '')}`,
     `Community: ${spaceUrl}`,
     '',
-    'Required when claiming:',
+    'Claim on POIDH (poidh.xyz — link on bankr.space Bounties tab):',
     '1. Complete the task described above',
-    '2. Submit a public proof link (tweet, screenshot/image URL, etc.)',
+    '2. Submit a public proof link (tweet, screenshot/image URL, etc.) on POIDH',
     '3. Optional: also post in the community tab so funders can discuss',
     '',
-    'Contributors on POIDH vote to approve payout after the creator proposes the winner.',
+    'POIDH handles payout: single funder pays out directly; multiple funders vote 48h.',
   ].join('\n');
 }
 
@@ -198,7 +198,7 @@ export function buildPoidhSpinUpPrompt(options: {
   return [
     `Use the poidh-bounty skill (${skillUrl}) on Base chain.`,
     'Create POIDH open bounties ONLY (createOpenBounty, not solo). Min seed 0.001 ETH each.',
-    'Funding happens on-chain — contributors use Add funds on bankr.space.',
+    'Funding happens on POIDH (poidh.xyz) — bankr.space lists status and links.',
     `Token $${options.symbol.replace(/^\$/, '')}: ${options.tokenAddress}`,
     '',
     'Create these bounties:',

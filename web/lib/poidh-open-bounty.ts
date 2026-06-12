@@ -3,27 +3,29 @@
 export const POIDH_OPEN_BOUNTY_GUIDE_URL =
   'https://words.poidh.xyz/poidh-open-bounties-guide';
 
+export const POIDH_BASE_URL = 'https://poidh.xyz/base';
+
 export const POIDH_OPEN_BOUNTY_STEPS = [
   {
-    title: 'Create a bounty in the Bounties tab',
-    body: 'Any token holder describes the task (Dex profile, shoutout, listing, etc.). It opens on-chain automatically as an open bounty.',
+    title: 'Create a bounty on bankr.space',
+    body: 'Any token holder describes the task here or asks @bankrbot. We open it on POIDH with a small ETH seed.',
   },
   {
-    title: 'Add funds in ETH',
-    body: 'Use Add funds right on the bounty card to grow the reward pool. Your share of the pool = your voting power when a winner is proposed.',
+    title: 'Work on poidh.xyz',
+    body: 'Open the bounty link to add funds, submit proof, and manage claims. POIDH runs the on-chain pool on Base.',
   },
   {
-    title: 'Do the work & submit proof',
-    body: 'Complete the task, then paste a proof link on the bounty card — tweet URL, screenshot/image link, or your bankr.space community page if you posted there.',
+    title: 'POIDH handles payout rules',
+    body: 'If only the creator funded the pool, a valid claim can be paid out directly. If others added ETH, contributors vote yes/no for 48 hours (weighted by their share) before payout.',
   },
   {
-    title: 'Finalize claim',
-    body: 'After you submit a claim, the issuer wallet pays out. If multiple people funded the bounty, contributors vote yes/no for 48 hours (weighted by funds). If only the issuer funded it, the claim is accepted immediately — no vote.',
+    title: 'Track status here',
+    body: 'This Bounties tab shows what is open or paid out. All actions — fund, claim, vote — happen on poidh.xyz.',
   },
 ] as const;
 
 export const POIDH_COMMUNITY_TASK_INTRO =
-  'Open bounties are crowdfunded outcome markets: create a task in the Bounties tab, pool ETH on-chain here, verify proof together, pay automatically.';
+  'Open bounties are crowdfunded outcome markets on POIDH. Create here; fund, claim, and vote on poidh.xyz.';
 
 /** Any public http(s) link — tweet, image, community page, etc. Stored on-chain as claim URI. */
 export function isValidProofUrl(raw: string): boolean {
