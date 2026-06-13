@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/petition-finalize",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/settle-questions",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

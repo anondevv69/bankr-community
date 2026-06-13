@@ -237,6 +237,35 @@ export interface Post {
   parentPostId?: string | null;
 }
 
+export type QuestionStatus = 'active' | 'settled';
+
+export interface QuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface QuestionVote {
+  wallet: string;
+  optionId: string;
+  balance: number;
+  votedAt: number;
+}
+
+export interface CommunityQuestion {
+  id: string;
+  tokenAddress: string;
+  wallet: string;
+  author: Author;
+  prompt: string;
+  options: QuestionOption[];
+  votes: QuestionVote[];
+  createdAt: number;
+  endsAt: number;
+  status: QuestionStatus;
+  winningOptionId?: string | null;
+  settledAt?: number | null;
+}
+
 export interface TokenLaunch {
   activityId: string;
   tokenAddress: string;

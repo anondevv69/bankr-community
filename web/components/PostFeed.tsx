@@ -22,11 +22,12 @@ import { PostContent } from './PostContent';
 import { PostSourceBadge } from './PostSourceBadge';
 import { CommunityJobsPanel } from '@/components/CommunityJobsPanel';
 import { TokenBountiesPanel } from '@/components/TokenBountiesPanel';
+import { QuestionsPanel } from '@/components/QuestionsPanel';
 import { apiFetch } from '@/lib/wagmi';
 
 const REACTIONS = ['👍', '❤️', '🔥'] as const;
 
-type FeedTab = PostFilter | 'oxjobs' | 'bounties';
+type FeedTab = PostFilter | 'oxjobs' | 'bounties' | 'questions';
 
 const POST_FILTERS: Array<{ id: PostFilter; label: string; icon: string }> = [
   { id: 'all', label: 'All Posts', icon: '' },
@@ -34,6 +35,8 @@ const POST_FILTERS: Array<{ id: PostFilter; label: string; icon: string }> = [
   { id: 'pinned', label: 'Pinned', icon: '📌' },
   { id: 'community', label: 'Community', icon: '👥' },
 ];
+
+const QUESTIONS_TAB = { id: 'questions' as const, label: 'Questions', icon: '❓' };
 
 const BOUNTIES_TAB = { id: 'bounties' as const, label: 'Bounties', icon: '🎯' };
 
@@ -447,6 +450,8 @@ export function PostFeed({
   ownerWallet,
   onUpdate,
   hideExtraTabs,
+  canCreateQuestion,
+  canVoteOnQuestion,
 }: {
   tokenAddress: string;
   tokenSymbol: string;
@@ -459,12 +464,15 @@ export function PostFeed({
   onUpdate: () => void;
   /** Petition spaces — posts only, no bounties/jobs tabs */
   hideExtraTabs?: boolean;
+  canCreateQuestion?: boolean;
+  canVoteOnQuestion?: boolean;
 }) {
   const { address } = useAppWallet();
   const [filter, setFilter] = useState<FeedTab>('all');
   const [hasJobs, setHasJobs] = useState(false);
   const isOxJobs = filter === 'oxjobs';
   const isBounties = filter === 'bounties';
+  const isQuestions = filter === 'questions';
   const [sort, setSort] = useState<PostSort>('newest');
   const [pinningId, setPinningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -504,16 +512,16 @@ export function PostFeed({
     () =>
       hideExtraTabs
         ? POST_FILTERS
-        : [...POST_FILTERS, BOUNTIES_TAB, ...(hasJobs ? [JOBS_TAB] : [])],
+        : [...POST_FILTERS, QUESTIONS_TAB, BOUNTIES_TAB, ...(hasJobs ? [JOBS_TAB] : [])],
     [hasJobs, hideExtraTabs]
   );
 
   const visiblePosts = useMemo(() => {
-    if (isOxJobs || isBounties) return [];
+    if (isOxJobs || isBounties || isQuestions) return [];
     const postFilter = filter as PostFilter;
     const filtered = filterPosts(posts, postFilter, pins, beneficiaryWallet, ownerWallet);
     return sortFilteredPosts(filtered, postFilter, sort, pins);
-  }, [posts, filter, sort, pins, beneficiaryWallet, ownerWallet, isOxJobs, isBounties]);
+  }, [posts, filter, sort, pins, beneficiaryWallet, ownerWallet, isOxJobs, isBounties, isQuestions]);
 
   async function togglePin(postId: string) {
     if (!address || !canManage) return;
@@ -573,7 +581,7 @@ export function PostFeed({
             </button>
           ))}
         </div>
-        {!isOxJobs && !isBounties ? (
+        {!isOxJobs && !isBounties && !isQuestions ? (
           <label className="inline-flex items-center gap-2 text-sm text-muted">
             <span className="hidden sm:inline">Sort</span>
             <select
@@ -588,7 +596,13 @@ export function PostFeed({
         ) : null}
       </div>
 
-      {isBounties ? (
+      {isQuestions ? (
+        <QuestionsPanel
+          tokenAddress={tokenAddress}
+          canCreate={!!canCreateQuestion}
+          canVote={!!canVoteOnQuestion}
+        />
+      ) : isBounties ? (
         <TokenBountiesPanel
           tokenAddress={tokenAddress}
           symbol={tokenSymbol}

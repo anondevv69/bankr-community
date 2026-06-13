@@ -83,6 +83,10 @@ export type SpacePermissions = {
   canPinPosts: boolean;
   /** Same as canPinPosts — delete posts, enforce moderation */
   canModeratePosts: boolean;
+  /** Verified space admins — post holder polls */
+  canCreateQuestion: boolean;
+  /** Token holders only */
+  canVoteOnQuestion: boolean;
   holds: boolean;
   balance: number;
   canPost: boolean;
@@ -141,6 +145,8 @@ export async function resolveSpacePermissions(
   const canProposeCommunityAgentGoal =
     verified && usePlatformAgent && holdResult.holds;
   const canPinPosts = verified && hasSocialAccess;
+  const canCreateQuestion = verified && hasSocialAccess;
+  const canVoteOnQuestion = holdResult.holds;
   const canPost = holdResult.holds || hasSocialAccess;
   const canReact = canPost;
 
@@ -165,6 +171,8 @@ export async function resolveSpacePermissions(
     canProposeCommunityAgentGoal,
     canPinPosts,
     canModeratePosts: canPinPosts,
+    canCreateQuestion,
+    canVoteOnQuestion,
     holds: holdResult.holds,
     balance: holdResult.balance,
     canPost,

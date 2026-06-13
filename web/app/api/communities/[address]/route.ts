@@ -7,6 +7,7 @@ import {
   setCommunities,
   getPosts,
 } from '@/lib/db';
+import { deleteQuestionsForToken } from '@/lib/community-questions';
 import { createCommunityFromLaunch } from '@/lib/create-community-from-launch';
 import { fetchLaunchByAddress } from '@/lib/bankr-api';
 import {
@@ -452,6 +453,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     }
 
     await deletePostsForToken(tokenAddress);
+    await deleteQuestionsForToken(tokenAddress);
 
     return NextResponse.json({
       success: true,

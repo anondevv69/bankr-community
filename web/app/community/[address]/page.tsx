@@ -42,6 +42,8 @@ export default function CommunityPage({ params }: { params: { address: string } 
     canEnablePlatformAgentSkills: boolean;
     canProposeCommunityAgentGoal: boolean;
     canPinPosts: boolean;
+    canCreateQuestion: boolean;
+    canVoteOnQuestion: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -88,6 +90,8 @@ export default function CommunityPage({ params }: { params: { address: string } 
         canEnablePlatformAgentSkills: data.canEnablePlatformAgentSkills,
         canProposeCommunityAgentGoal: data.canProposeCommunityAgentGoal,
         canPinPosts: data.canPinPosts,
+        canCreateQuestion: data.canCreateQuestion,
+        canVoteOnQuestion: data.canVoteOnQuestion,
       });
     } catch {
       setHolder({
@@ -107,6 +111,8 @@ export default function CommunityPage({ params }: { params: { address: string } 
         canEnablePlatformAgentSkills: false,
         canProposeCommunityAgentGoal: false,
         canPinPosts: false,
+        canCreateQuestion: false,
+        canVoteOnQuestion: false,
       });
     }
   }, [address, tokenAddress]);
@@ -306,6 +312,8 @@ export default function CommunityPage({ params }: { params: { address: string } 
             beneficiaryWallet={beneficiary?.wallet}
             ownerWallet={community.ownerWallet}
             onUpdate={load}
+            canCreateQuestion={!!holder?.canCreateQuestion}
+            canVoteOnQuestion={!!holder?.canVoteOnQuestion}
           />
         </div>
       </div>
