@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCommunity } from '@/lib/db';
 import {
   castQuestionVote,
+  closeCommunityQuestion,
   questionVoteCounts,
   settleQuestionRecord,
   userQuestionVote,
@@ -21,16 +22,38 @@ export async function POST(req: Request, { params }: RouteParams) {
   const { id: questionId } = await params;
   const body = await req.json().catch(() => ({}));
   const tokenAddress = normalizeAddr(String(body.tokenAddress || ''));
-  const optionId = String(body.optionId || '').trim();
+  const action = String(body.action || 'vote');
 
-  if (!tokenAddress || !optionId) {
-    return NextResponse.json({ error: 'tokenAddress and optionId required' }, { status: 400 });
+  if (!tokenAddress) {
+    return NextResponse.json({ error: 'tokenAddress required' }, { status: 400 });
   }
 
   try {
     const community = await getCommunity(tokenAddress);
     if (!community) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
+    }
+
+    if (action === 'close') {
+      const question = await closeCommunityQuestion({
+        questionId,
+        tokenAddress,
+        wallet,
+        chain: community.chain || 'base',
+      });
+      return NextResponse.json({
+        success: true,
+        question: {
+          ...question,
+          tallies: questionVoteCounts(question),
+          userVote: userQuestionVote(question, wallet),
+        },
+      });
+    }
+
+    const optionId = String(body.optionId || '').trim();
+    if (!optionId) {
+      return NextResponse.json({ error: 'optionId required' }, { status: 400 });
     }
 
     const question = await castQuestionVote({
@@ -65,7 +88,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
       if (found) {
         let question = found;
         if (question.status === 'active' && Date.now() >= question.endsAt) {
-          question = settleQuestionRecord(question);
+          question = settleQuestionRecord(question, { closeReason: 'expired' });
           const updated = questions.map((q) => (q.id === questionId ? question : q));
           const { setQuestionsForToken } = await import('@/lib/community-questions');
           await setQuestionsForToken(token, updated);

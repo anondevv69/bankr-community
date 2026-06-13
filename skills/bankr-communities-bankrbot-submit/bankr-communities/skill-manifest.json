@@ -1,7 +1,7 @@
 {
   "name": "bankr-communities",
   "displayName": "Bankr Space",
-  "skillVersion": "1.21.0",
+  "skillVersion": "1.23.0",
   "defaultSiteUrl": "https://bankr.space",
   "COMMUNITIES_SITE_URL": "https://bankr.space",
   "communityUrlTemplate": "https://bankr.space/community/{tokenContractAddress}",
@@ -48,7 +48,7 @@
     "references/community-api-reference.md",
     "references/dm-intents.md"
   ],
-  "bankrNote": "Writes: verify, PATCH profile, post, pin, fundraising, holder votes (POST …/questions yes_no|choice). Vote tweets: read HOLDER-VOTES.md — never say no poll feature. Space token = 0xef703b… when user says Space/$SPACE. Use linked wallet in x-wallet-address.",
+  "bankrNote": "Writes: verify, PATCH profile, post, pin, fundraising, holder votes. Start vote: POST /api/agent/start-vote { symbol, prompt } — Space token = 0xef703b… when user says Space/$SPACE. Never say no poll feature. Petition spaces: unit holders vote only. Use linked wallet in x-wallet-address.",
   "routingKeywords": [
     "space",
     "community",

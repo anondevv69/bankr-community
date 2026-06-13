@@ -156,22 +156,25 @@ Content-Type: application/json
 
 The site shows labels like **Posted via @bankrbot · X DM** under the post. Older posts have no `source`.
 
-### Holder votes (24h polls)
+### Holder votes (1–24h polls)
 
-Space admins start a ballot; **holders vote**; results settle after **24 hours**. Human UI: space → **Votes** tab.
+Space admins start a ballot (choose **1–24 hour** window, default 24h); **holders vote**; results settle when the window ends or when an admin **closes early**. Human UI: space → **Votes** tab.
 
 ```http
 GET  /api/communities/{tokenAddress}/questions?wallet=0x…
 POST /api/communities/{tokenAddress}/questions
-     Body: { "prompt": "Should we…?", "voteType": "yes_no" }
+     Body: { "prompt": "Should we…?", "voteType": "yes_no", "durationHours": 12 }
      Body: { "prompt": "Which…?", "voteType": "choice", "options": ["A", "B"] }
 POST /api/questions/{questionId}/vote
      Body: { "tokenAddress": "0x…", "optionId": "opt…" }
+POST /api/questions/{questionId}/vote
+     Body: { "tokenAddress": "0x…", "action": "close" }   ← admin close early
 ```
 
 | Action | Who |
 |--------|-----|
 | Start vote | Verified space admin — `canCreateQuestion` (fee recipient, deployer when allowed, delegate, petition founder) |
+| Close vote early | Same as start vote |
 | Cast vote | Holders only — `canVoteOnQuestion` |
 | View | Anyone |
 

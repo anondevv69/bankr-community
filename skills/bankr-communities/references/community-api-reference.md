@@ -99,12 +99,12 @@ GET /api/holders/{tokenAddress}?wallet=0x…
 ```
 GET  /api/communities/{tokenAddress}/questions?wallet=0x…
 POST /api/communities/{tokenAddress}/questions
-     body: { prompt, voteType: "yes_no"|"choice", options?: string[] }
+     body: { prompt, voteType: "yes_no"|"choice", options?: string[], durationHours?: 1-24 }
 POST /api/questions/{questionId}/vote
-     body: { tokenAddress, optionId }
+     body: { tokenAddress, optionId }  OR  { tokenAddress, action: "close" }
 ```
 
-**Start vote:** verified space admin (`canCreateQuestion`). **Cast vote:** holders only. One active vote per space; auto-settles after 24h. Skill: **`HOLDER-VOTES.md`**.
+**Start vote:** verified space admin (`canCreateQuestion`). **Close early:** same admins. **Cast vote:** holders only. One active vote per space; auto-settles when window ends (default 24h, max 24h). Skill: **`HOLDER-VOTES.md`**.
 
 ---
 

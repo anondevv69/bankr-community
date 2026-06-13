@@ -49,6 +49,8 @@ export async function GET(req: Request, { params }: RouteParams) {
       canModeratePosts: permissions.canModeratePosts,
       canCreateQuestion: permissions.canCreateQuestion,
       canVoteOnQuestion: permissions.canVoteOnQuestion,
+      voteUsesUnits: permissions.voteUsesUnits,
+      unitBalance: permissions.unitBalance,
       verified: permissions.verified,
       allowDeployerEdit: permissions.allowDeployerEdit,
       trustedDelegates: permissions.trustedDelegates,

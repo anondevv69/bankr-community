@@ -300,12 +300,17 @@ export async function GET(req: Request) {
             recent: recentVotes,
             listVotes: `GET /api/communities/${community.tokenAddress}/questions`,
             startVote:
-              'POST /api/communities/{token}/questions header x-wallet-address — body: { prompt, voteType: yes_no|choice, options? }',
+              'POST /api/agent/start-vote header x-wallet-address — body: { prompt, symbol?, token?, voteType?, durationHours? } — preferred for agents',
+            startVoteDirect:
+              'POST /api/communities/{token}/questions header x-wallet-address — body: { prompt, voteType: yes_no|choice, options?, durationHours? (1–24, default 24) }',
+            spaceTokenAddress: '0xef703b860a6d422fa00cc67bbbb2662297cb6ba3',
             castVote:
               'POST /api/questions/{questionId}/vote header x-wallet-address — body: { tokenAddress, optionId }',
+            closeVote:
+              'POST /api/questions/{questionId}/vote header x-wallet-address — body: { tokenAddress, action: "close" } — admin only',
             humanUi: 'Votes tab on space page',
             agentNote:
-              'Verified space admin starts vote (canCreateQuestion). Holders vote (canVoteOnQuestion). One active vote per space; 24h auto-settle. See HOLDER-VOTES.md',
+              'Verified space admin starts/closes votes (canCreateQuestion). Holders vote (canVoteOnQuestion); petition spaces = fee-right unit holders only, weighted by units. Use POST /api/agent/start-vote with symbol Space for native token. See HOLDER-VOTES.md',
           }
         : null,
       links: {
@@ -328,9 +333,13 @@ export async function GET(req: Request) {
           'POST /api/communities/{token}/poidh/request header x-wallet-address — holder creates open bounty (ETH on Base)',
         listVotes: 'GET /api/communities/{token}/questions',
         startVote:
-          'POST /api/communities/{token}/questions header x-wallet-address — verified admin; yes_no or choice',
+          'POST /api/agent/start-vote header x-wallet-address — body: { prompt, symbol?, token?, voteType?, durationHours? }',
+        startVoteDirect:
+          'POST /api/communities/{token}/questions header x-wallet-address — verified admin',
         castVote:
           'POST /api/questions/{questionId}/vote header x-wallet-address — holders only',
+        closeVote:
+          'POST /api/questions/{questionId}/vote header x-wallet-address — action close; admin only',
       },
     });
   } catch (err) {

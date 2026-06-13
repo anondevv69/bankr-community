@@ -1,12 +1,30 @@
 import { kvGet, kvSet } from './kv-store';
+import { getCommunity } from './db';
 import { holdsToken } from './holder';
 import { resolveSpacePermissions } from './community-owner';
+import { getPetitionUnitBalance } from './petition-unit-holders';
 import { resolveAuthorProfile } from './profiles';
 import { normalizeAddr } from './utils';
 import type { Author, CommunityQuestion, QuestionOption, QuestionVote, QuestionVoteType } from './types';
 
 const QUESTIONS_KEY = 'community_questions';
 export const QUESTION_DURATION_MS = 24 * 60 * 60 * 1000;
+export const MAX_VOTE_DURATION_HOURS = 24;
+export const MIN_VOTE_DURATION_HOURS = 1;
+
+export function parseVoteDurationMs(durationHours?: number): number {
+  const h = Number(durationHours);
+  const hours = Number.isFinite(h) ? h : MAX_VOTE_DURATION_HOURS;
+  const clamped = Math.min(
+    MAX_VOTE_DURATION_HOURS,
+    Math.max(MIN_VOTE_DURATION_HOURS, Math.round(hours))
+  );
+  return clamped * 60 * 60 * 1000;
+}
+
+export function isQuestionActive(question: CommunityQuestion): boolean {
+  return question.status === 'active' && Date.now() < question.endsAt;
+}
 
 export async function getAllQuestions(): Promise<Record<string, CommunityQuestion[]>> {
   return (await kvGet<Record<string, CommunityQuestion[]>>(QUESTIONS_KEY)) || {};
@@ -47,7 +65,8 @@ export function tallyQuestionVotes(question: CommunityQuestion): {
   }
   for (const vote of question.votes) {
     if (counts[vote.optionId] !== undefined) {
-      counts[vote.optionId]++;
+      const weight = question.weightedByUnits ? Math.max(0, vote.balance || 0) : 1;
+      counts[vote.optionId] += weight;
     }
   }
   let winningOptionId: string | null = null;
@@ -58,14 +77,20 @@ export function tallyQuestionVotes(question: CommunityQuestion): {
       winningOptionId = opt.id;
     }
   }
+  const totalVotes = question.weightedByUnits
+    ? question.votes.reduce((sum, v) => sum + Math.max(0, v.balance || 0), 0)
+    : question.votes.length;
   return {
     counts,
     winningOptionId: max > 0 ? winningOptionId : null,
-    totalVotes: question.votes.length,
+    totalVotes,
   };
 }
 
-export function settleQuestionRecord(question: CommunityQuestion): CommunityQuestion {
+export function settleQuestionRecord(
+  question: CommunityQuestion,
+  options?: { closedBy?: string; closeReason?: 'expired' | 'manual' }
+): CommunityQuestion {
   if (question.status === 'settled') return question;
   const { winningOptionId } = tallyQuestionVotes(question);
   return {
@@ -73,6 +98,8 @@ export function settleQuestionRecord(question: CommunityQuestion): CommunityQues
     status: 'settled',
     winningOptionId,
     settledAt: Date.now(),
+    closeReason: options?.closeReason ?? question.closeReason ?? 'expired',
+    closedBy: options?.closedBy ?? question.closedBy ?? null,
   };
 }
 
@@ -92,6 +119,7 @@ export async function createCommunityQuestion(options: {
   prompt: string;
   voteType?: QuestionVoteType;
   optionLabels?: string[];
+  durationHours?: number;
   chain?: string;
 }): Promise<CommunityQuestion> {
   const token = normalizeAddr(options.tokenAddress);
@@ -105,8 +133,11 @@ export async function createCommunityQuestion(options: {
     );
   }
 
+  const community = await getCommunity(token);
+  const weightedByUnits = !!(community?.fromPetition || permissions.voteUsesUnits);
+
   const questions = await getQuestions(token);
-  const active = questions.filter((q) => q.status === 'active' && q.endsAt > Date.now());
+  const active = questions.filter((q) => isQuestionActive(q));
   if (active.length > 0) {
     throw new Error('This space already has an active vote. Wait for it to settle first.');
   }
@@ -142,6 +173,7 @@ export async function createCommunityQuestion(options: {
 
   const author = await resolveAuthorProfile(wallet);
   const now = Date.now();
+  const durationMs = parseVoteDurationMs(options.durationHours);
   const questionOptions: QuestionOption[] = labels.map((label, i) => ({
     id: newId(`opt${i}`),
     label,
@@ -157,10 +189,14 @@ export async function createCommunityQuestion(options: {
     options: questionOptions,
     votes: [],
     createdAt: now,
-    endsAt: now + QUESTION_DURATION_MS,
+    durationMs,
+    endsAt: now + durationMs,
     status: 'active',
     winningOptionId: null,
     settledAt: null,
+    closeReason: undefined,
+    closedBy: null,
+    weightedByUnits: weightedByUnits || undefined,
   };
 
   questions.unshift(question);
@@ -181,7 +217,11 @@ export async function castQuestionVote(options: {
 
   const permissions = await resolveSpacePermissions(wallet, token, chain);
   if (!permissions.canVoteOnQuestion) {
-    throw new Error('You must hold this token to vote');
+    throw new Error(
+      permissions.voteUsesUnits
+        ? 'You must hold fee-right units from this petition to vote'
+        : 'You must hold this token to vote'
+    );
   }
 
   const questions = await getQuestions(token);
@@ -191,8 +231,8 @@ export async function castQuestionVote(options: {
   }
 
   let question = questions[index];
-  if (question.status !== 'active' || Date.now() >= question.endsAt) {
-    question = settleQuestionRecord(question);
+  if (!isQuestionActive(question)) {
+    question = settleQuestionRecord(question, { closeReason: 'expired' });
     questions[index] = question;
     await setQuestionsForToken(token, questions);
     throw new Error('This vote has ended');
@@ -202,16 +242,58 @@ export async function castQuestionVote(options: {
     throw new Error('Invalid option');
   }
 
-  const holdResult = await holdsToken(wallet, token, chain);
+  const voteWeight = permissions.voteUsesUnits
+    ? permissions.unitBalance
+    : (await holdsToken(wallet, token, chain)).balance;
   const vote: QuestionVote = {
     wallet,
     optionId: options.optionId,
-    balance: holdResult.balance,
+    balance: voteWeight,
     votedAt: Date.now(),
   };
 
   const withoutWallet = question.votes.filter((v) => v.wallet.toLowerCase() !== wallet);
   question = { ...question, votes: [...withoutWallet, vote] };
+  questions[index] = question;
+  await setQuestionsForToken(token, questions);
+  return question;
+}
+
+export async function closeCommunityQuestion(options: {
+  questionId: string;
+  tokenAddress: string;
+  wallet: string;
+  chain?: string;
+}): Promise<CommunityQuestion> {
+  const token = normalizeAddr(options.tokenAddress);
+  const wallet = options.wallet.toLowerCase();
+  const chain = options.chain || 'base';
+
+  const permissions = await resolveSpacePermissions(wallet, token, chain);
+  if (!permissions.canCreateQuestion) {
+    throw new Error('Only space admins can close a vote early');
+  }
+
+  const questions = await getQuestions(token);
+  const index = questions.findIndex((q) => q.id === options.questionId);
+  if (index === -1) {
+    throw new Error('Vote not found');
+  }
+
+  let question = questions[index];
+  if (!isQuestionActive(question)) {
+    if (question.status !== 'settled') {
+      question = settleQuestionRecord(question, { closeReason: 'expired' });
+      questions[index] = question;
+      await setQuestionsForToken(token, questions);
+    }
+    throw new Error('This vote is already closed');
+  }
+
+  question = settleQuestionRecord(question, {
+    closedBy: wallet,
+    closeReason: 'manual',
+  });
   questions[index] = question;
   await setQuestionsForToken(token, questions);
   return question;
@@ -233,7 +315,7 @@ export async function settleExpiredQuestions(): Promise<{
         settled++;
         changed = true;
         tokens.push(token);
-        return settleQuestionRecord(q);
+        return settleQuestionRecord(q, { closeReason: 'expired' });
       }
       return q;
     });

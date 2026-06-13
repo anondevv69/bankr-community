@@ -265,9 +265,15 @@ export interface CommunityQuestion {
   votes: QuestionVote[];
   createdAt: number;
   endsAt: number;
+  /** Ballot length chosen at create (ms); max 24h */
+  durationMs?: number;
   status: QuestionStatus;
   winningOptionId?: string | null;
   settledAt?: number | null;
+  closeReason?: 'expired' | 'manual';
+  closedBy?: string | null;
+  /** Petition spaces: tally uses vote.balance (fee-right units) instead of 1 per wallet */
+  weightedByUnits?: boolean;
 }
 
 export interface TokenLaunch {

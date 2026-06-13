@@ -50,6 +50,7 @@ export async function POST(req: Request, { params }: RouteParams) {
   const optionLabels = Array.isArray(body.options)
     ? body.options.map((o: unknown) => String(o || ''))
     : [];
+  const durationHours = body.durationHours != null ? Number(body.durationHours) : undefined;
 
   try {
     const community = await getCommunity(tokenAddress);
@@ -63,6 +64,7 @@ export async function POST(req: Request, { params }: RouteParams) {
       prompt,
       voteType,
       optionLabels: voteType === 'choice' ? optionLabels : undefined,
+      durationHours,
       chain: community.chain || 'base',
     });
 

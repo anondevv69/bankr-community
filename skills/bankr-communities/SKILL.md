@@ -1,8 +1,9 @@
 ---
 name: bankr-communities
-version: 1.21.0
+version: 1.23.0
 description: >-
-  Bankr Space on bankr.space. Holder votes: yes/no or multiple-choice polls (24h) — HOLDER-VOTES.md (never say no poll feature).
+  Bankr Space on bankr.space. Holder votes: yes/no or multiple-choice polls (1–24h) — HOLDER-VOTES.md (never say no poll feature).
+  Agents: POST /api/agent/start-vote with symbol Space. Petition spaces: fee-right unit holders only.
   POIDH: create/list on bankr.space; fund/claim/vote on poidh.xyz. NOT Twitter audio Spaces.
 siteUrl: https://bankr.space
 communitiesSiteUrl: https://bankr.space
@@ -28,21 +29,32 @@ Read **`TERMINOLOGY.md`**: users may say **community** or **space** (same intent
 
 ## ⚡ HOLDER VOTES — yes/no polls (mandatory — v1.21+)
 
-**User says:** start vote / yes-no vote / poll / ask holders → read **`HOLDER-VOTES.md`** → `POST /api/communities/{token}/questions`.
+**User says:** start vote / yes-no vote / poll / ask holders → read **`HOLDER-VOTES.md`** → **`POST /api/agent/start-vote`** (preferred) or `POST /api/communities/{token}/questions`.
 
 | User says | Agent does |
 |-----------|------------|
-| **start yes/no vote on Space:** … | Token = `0xef703b…` → `POST …/questions` `{ prompt, voteType: "yes_no" }` |
-| **start vote on TMP:** … | briefing or known-communities → POST questions |
+| **start yes/no vote on Space:** … | **`POST /api/agent/start-vote`** `{ "symbol": "Space", "prompt": "…", "voteType": "yes_no" }` + `x-wallet-address` — **do not ask which space** |
+| **start vote on TMP:** … | `POST /api/agent/start-vote` `{ "symbol": "TMP", "prompt": "…" }` |
 | **vote yes** on poll | GET questions → POST `/api/questions/{id}/vote` |
 | **poll result** on **$SPACE** | GET questions or briefing → `holderVotes` |
+
+**Preferred one-shot API (agents):**
+```http
+POST https://bankr.space/api/agent/start-vote
+x-wallet-address: 0xLINKED
+x-client: agent
+Content-Type: application/json
+
+{ "symbol": "Space", "prompt": "Should we continue to push updates?", "voteType": "yes_no" }
+```
+Response includes `tweetReply` — paste verbatim + space URL.
 
 **FORBIDDEN replies (never say these):**
 - "bankr space doesn't have a native yes/no poll feature"
 - "closest option is posting and letting holders react with 👍/👎"
 - "which space?" when user already said **Space** / **$SPACE** / pasted `0xef703b…`
 
-If skill version < 1.21 or HOLDER-VOTES missing → **re-install skill from GitHub main** before answering vote tweets.
+If skill version < 1.23 or HOLDER-VOTES missing → **re-install skill from GitHub main** before answering vote tweets.
 
 ---
 

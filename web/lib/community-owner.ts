@@ -2,6 +2,7 @@ import { getCommunity, getLaunches } from './db';
 import { fetchLaunchByAddress, getLaunchOwnerWallets } from './bankr-api';
 import { holdsToken } from './holder';
 import { getPetitionSpaceByToken } from './petition-spaces';
+import { getPetitionUnitBalance } from './petition-unit-holders';
 import {
   isTrustedDelegateWallet,
   normalizeTrustedDelegates,
@@ -85,8 +86,11 @@ export type SpacePermissions = {
   canModeratePosts: boolean;
   /** Verified space admins — post holder polls */
   canCreateQuestion: boolean;
-  /** Token holders only */
+  /** Token holders only (or fee-right unit holders on petition spaces) */
   canVoteOnQuestion: boolean;
+  /** Petition-launched spaces weight votes by TMP fee-right units */
+  voteUsesUnits: boolean;
+  unitBalance: number;
   holds: boolean;
   balance: number;
   canPost: boolean;
@@ -116,11 +120,15 @@ export async function resolveSpacePermissions(
   const isPetitionFounder = fromPetition && isFounder;
   const resolvedChain = community?.chain || chain;
 
-  const [isBeneficiary, isDeployer, holdResult] = await Promise.all([
+  const [isBeneficiary, isDeployer, holdResult, unitHolder] = await Promise.all([
     isTokenBeneficiary(w, token),
     isTokenDeployer(w, token),
     holdsToken(w, token, resolvedChain),
+    fromPetition ? getPetitionUnitBalance(w, token) : Promise.resolve(null),
   ]);
+
+  const voteUsesUnits = fromPetition;
+  const unitBalance = unitHolder?.units ?? 0;
 
   const effectiveBeneficiary = isBeneficiary || isPetitionFounder;
 
@@ -146,7 +154,7 @@ export async function resolveSpacePermissions(
     verified && usePlatformAgent && holdResult.holds;
   const canPinPosts = verified && hasSocialAccess;
   const canCreateQuestion = verified && hasSocialAccess;
-  const canVoteOnQuestion = holdResult.holds;
+  const canVoteOnQuestion = voteUsesUnits ? unitBalance > 0 : holdResult.holds;
   const canPost = holdResult.holds || hasSocialAccess;
   const canReact = canPost;
 
@@ -173,6 +181,8 @@ export async function resolveSpacePermissions(
     canModeratePosts: canPinPosts,
     canCreateQuestion,
     canVoteOnQuestion,
+    voteUsesUnits,
+    unitBalance,
     holds: holdResult.holds,
     balance: holdResult.balance,
     canPost,

@@ -16,6 +16,13 @@ type QuestionView = CommunityQuestion & {
   userVote?: { optionId: string } | null;
 };
 
+function voteCountLabel(count: number, weightedByUnits?: boolean): string {
+  if (weightedByUnits) {
+    return `${count} unit${count === 1 ? '' : 's'}`;
+  }
+  return `${count} vote${count === 1 ? '' : 's'}`;
+}
+
 function isYesNoBallot(question: QuestionView): boolean {
   if (question.voteType === 'yes_no') return true;
   if (question.voteType === 'choice') return false;
@@ -40,6 +47,7 @@ function YesNoButtons({
   selectedId,
   disabled,
   onVote,
+  weightedByUnits,
 }: {
   options: QuestionOption[];
   counts: Record<string, number>;
@@ -47,6 +55,7 @@ function YesNoButtons({
   selectedId: string | null;
   disabled: boolean;
   onVote: (optionId: string) => void;
+  weightedByUnits?: boolean;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -75,7 +84,7 @@ function YesNoButtons({
           >
             <div className="text-base font-semibold">{option.label}</div>
             <div className="text-xs text-muted mt-1 tabular-nums">
-              {pct}% · {count} vote{count === 1 ? '' : 's'}
+              {pct}% · {voteCountLabel(count, weightedByUnits)}
             </div>
           </button>
         );
@@ -91,6 +100,7 @@ function ChoiceOption({
   selected,
   disabled,
   onVote,
+  weightedByUnits,
 }: {
   option: QuestionOption;
   count: number;
@@ -98,6 +108,7 @@ function ChoiceOption({
   selected: boolean;
   disabled: boolean;
   onVote: () => void;
+  weightedByUnits?: boolean;
 }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
@@ -116,7 +127,7 @@ function ChoiceOption({
       <div className="flex justify-between gap-2 mb-1.5">
         <span className="font-medium">{option.label}</span>
         <span className="text-xs text-muted tabular-nums shrink-0">
-          {pct}% · {count}
+          {pct}% · {weightedByUnits ? `${count} units` : count}
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-bg overflow-hidden">
@@ -129,10 +140,12 @@ function ChoiceOption({
 function VoteCard({
   question,
   canVote,
+  canClose,
   onVoted,
 }: {
   question: QuestionView;
   canVote: boolean;
+  canClose: boolean;
   onVoted: () => void;
 }) {
   const { address } = useAppWallet();
@@ -169,6 +182,27 @@ function VoteCard({
     }
   }
 
+  async function closePoll() {
+    if (!address || !canClose || !isActive) return;
+    if (!window.confirm('Close this vote now and settle results?')) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/api/questions/${question.id}/vote`, {
+        method: 'POST',
+        wallet: address,
+        body: JSON.stringify({
+          tokenAddress: question.tokenAddress,
+          action: 'close',
+        }),
+      });
+      onVoted();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to close vote');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const userOptionId = question.userVote?.optionId || null;
   const winnerLabel = question.winningOptionId
     ? question.options.find((o) => o.id === question.winningOptionId)?.label
@@ -183,15 +217,25 @@ function VoteCard({
             {yesNo ? 'Yes / No' : 'Multiple choice'}
           </span>
         </div>
-        <div className="text-right text-[10px] text-muted">
+        <div className="text-right text-[10px] text-muted shrink-0">
           {isActive ? (
             <span className="text-accent font-medium">{timeLeft(question.endsAt)}</span>
           ) : (
             <span className="uppercase tracking-wide text-green-600 dark:text-green-400">
-              Settled
+              {question.closeReason === 'manual' ? 'Closed early' : 'Settled'}
             </span>
           )}
           <div>{formatTime(question.createdAt)}</div>
+          {canClose && isActive ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void closePoll()}
+              className="mt-1 text-[10px] text-red-500 hover:underline disabled:opacity-50"
+            >
+              {busy ? 'Closing…' : 'Close vote'}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -205,6 +249,7 @@ function VoteCard({
           selectedId={userOptionId}
           disabled={!isActive || !canVote || busy}
           onVote={(id) => void vote(id)}
+          weightedByUnits={question.weightedByUnits}
         />
       ) : (
         <div className="space-y-2">
@@ -217,13 +262,16 @@ function VoteCard({
               selected={userOptionId === option.id}
               disabled={!isActive || !canVote || busy}
               onVote={() => void vote(option.id)}
+              weightedByUnits={question.weightedByUnits}
             />
           ))}
         </div>
       )}
 
       <p className="text-[10px] text-muted">
-        {question.tallies.totalVotes} holder vote{question.tallies.totalVotes === 1 ? '' : 's'}
+        {question.weightedByUnits
+          ? `${question.tallies.totalVotes} fee-right unit${question.tallies.totalVotes === 1 ? '' : 's'} cast`
+          : `${question.tallies.totalVotes} holder vote${question.tallies.totalVotes === 1 ? '' : 's'}`}
         {isActive && canVote
           ? userOptionId
             ? ' · tap another answer to change your vote'
@@ -257,6 +305,9 @@ export function QuestionsPanel({
   const [voteType, setVoteType] = useState<QuestionVoteType>('yes_no');
   const [prompt, setPrompt] = useState('');
   const [choices, setChoices] = useState(['', '']);
+  const [durationHours, setDurationHours] = useState(24);
+
+  const DURATION_OPTIONS = [1, 3, 6, 12, 24];
 
   const load = useCallback(async () => {
     try {
@@ -297,12 +348,14 @@ export function QuestionsPanel({
         body: JSON.stringify({
           prompt,
           voteType,
+          durationHours,
           options: voteType === 'choice' ? choices.filter((o) => o.trim()) : undefined,
         }),
       });
       setPrompt('');
       setChoices(['', '']);
       setVoteType('yes_no');
+      setDurationHours(24);
       setShowForm(false);
       await load();
     } catch (err) {
@@ -329,8 +382,8 @@ export function QuestionsPanel({
           <div>
             <h2 className="text-sm font-semibold">Holder votes</h2>
             <p className="text-[11px] text-muted mt-1 leading-snug">
-              Space admins put a yes/no or multiple-choice question to holders. Voting runs 24
-              hours, then settles automatically.
+              Space admins put a yes/no or multiple-choice question to holders. Choose how long
+              the ballot stays open (max 24 hours), then results settle automatically.
             </p>
           </div>
           {canCreate && !hasActive ? (
@@ -346,8 +399,8 @@ export function QuestionsPanel({
 
         {canCreate && hasActive ? (
           <p className="text-[11px] text-amber-600 dark:text-amber-400">
-            One active vote at a time — wait for the current ballot to settle before starting
-            another.
+            One active vote at a time — close the current ballot or wait for it to settle before
+            starting another.
           </p>
         ) : null}
 
@@ -413,7 +466,7 @@ export function QuestionsPanel({
           {voteType === 'yes_no' ? (
             <p className="text-[11px] text-muted">
               Holders vote <strong className="text-text">Yes</strong> or{' '}
-              <strong className="text-text">No</strong>. Ballot closes in 24 hours.
+              <strong className="text-text">No</strong>.
             </p>
           ) : (
             <div className="space-y-2">
@@ -450,6 +503,26 @@ export function QuestionsPanel({
             </div>
           )}
 
+          <label className="block text-xs text-muted">
+            Voting window (max 24 hours)
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {DURATION_OPTIONS.map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setDurationHours(h)}
+                  className={`px-2.5 py-1 text-xs rounded-lg border ${
+                    durationHours === h
+                      ? 'bg-accent/15 border-accent text-accent'
+                      : 'border-border bg-surface-2 text-muted'
+                  }`}
+                >
+                  {h}h
+                </button>
+              ))}
+            </div>
+          </label>
+
           <button
             type="button"
             disabled={
@@ -460,7 +533,7 @@ export function QuestionsPanel({
             onClick={() => void submitVote()}
             className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-lg disabled:opacity-50"
           >
-            {creating ? 'Starting…' : 'Open vote for 24 hours'}
+            {creating ? 'Starting…' : `Open vote for ${durationHours}h`}
           </button>
         </div>
       ) : null}
@@ -471,7 +544,13 @@ export function QuestionsPanel({
         </div>
       ) : (
         questions.map((q) => (
-          <VoteCard key={q.id} question={q} canVote={canVote} onVoted={load} />
+          <VoteCard
+            key={q.id}
+            question={q}
+            canVote={canVote}
+            canClose={canCreate}
+            onVoted={load}
+          />
         ))
       )}
     </div>
