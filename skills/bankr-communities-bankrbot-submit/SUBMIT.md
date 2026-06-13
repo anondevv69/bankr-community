@@ -61,7 +61,7 @@ bankr-communities/
 | Provider | [Bankr Space](https://bankr.space) |
 | Skill | `bankr-communities/` |
 | Description | Token-gated spaces for Bankr-launched tokens — links, briefing, posts, verify, pin, beneficiary profile updates |
-| Source repo | https://github.com/anondevv69/bankr-community |
+| Source repo | https://github.com/anondevv69/bankr-space |
 
 ## Test before submitting
 

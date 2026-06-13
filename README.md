@@ -39,7 +39,7 @@ Quick summary:
 Install alongside TMP skills so users can `@bankrbot` space actions:
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 Set `COMMUNITIES_SITE_URL=https://bankr.space` on Bankr. See [skills/bankr-communities/ONE-LINE-INTENTS.md](./skills/bankr-communities/ONE-LINE-INTENTS.md).

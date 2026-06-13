@@ -10,7 +10,7 @@ This document is for **any AI agent** (Bankr, Cursor, custom bots) that should r
 **Bankr users:** also install the skill pack:
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 **Live mirror (always current):** `{{SITE_URL}}/agent.md`
@@ -121,7 +121,7 @@ POST /api/communities/{tokenAddress}/fundraising/x402   ← browser proxy (walle
 
 **Platform agent:** Deployer **or** fee recipient opts in (`usePlatformAgent`); fee recipient only for `platformAgentSkills`. Cron worker polls `GET /api/agent/platform-spaces` to run matched fundraisers. USDC always settles to fee recipient — see **`PLATFORM-AGENT.md`**.
 
-**Platform worker host (recommended):** [Aeon](https://github.com/aaronjmars/aeon) — install pack `anondevv69/bankr-community` path `aeon-skill-pack`; skill `bankr-space-worker` on `*/15` cron. Secrets: `CRON_SECRET`, `PLATFORM_AGENT_WALLET` (match Vercel). Optional Base MCP for on-chain skills. Guide: `aeon-skill-pack/README.md`.
+**Platform worker host (recommended):** [Aeon](https://github.com/aaronjmars/aeon) — install pack `anondevv69/bankr-space` path `aeon-skill-pack`; skill `bankr-space-worker` on `*/15` cron. Secrets: `CRON_SECRET`, `PLATFORM_AGENT_WALLET` (match Vercel). Optional Base MCP for on-chain skills. Guide: `aeon-skill-pack/README.md`.
 
 **Post tips:** Holders can tip post authors with the **community token** on Base from the space UI (no agent HTTP API).
 
@@ -314,7 +314,7 @@ Example:
 ```text
 install TMP site agent at https://github.com/anondevv69/bankr-tmp-skill/tree/main/tmp-site-agent
 install TMP skills at https://github.com/anondevv69/bankr-tmp-skill
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 Set `COMMUNITIES_SITE_URL={{SITE_URL}}` on Bankr.
@@ -323,7 +323,7 @@ Set `COMMUNITIES_SITE_URL={{SITE_URL}}` on Bankr.
 
 ## Source
 
-- GitHub: [github.com/anondevv69/bankr-community](https://github.com/anondevv69/bankr-community)
+- GitHub: [github.com/anondevv69/bankr-space](https://github.com/anondevv69/bankr-space)
 - Skill pack: `skills/bankr-communities/`
 - Web app: `web/`
 

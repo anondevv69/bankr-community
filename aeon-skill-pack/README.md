@@ -106,14 +106,14 @@ Track spend: Aeon `cost-report` skill + `memory/token-usage.csv`.
 From your Aeon repo:
 
 ```bash
-./install-skill-pack anondevv69/bankr-community --path aeon-skill-pack --yes
-./add-skill anondevv69/bankr-community bankr-communities --force
+./install-skill-pack anondevv69/bankr-space --path aeon-skill-pack --yes
+./add-skill anondevv69/bankr-space bankr-communities --force
 ```
 
 Or worker only:
 
 ```bash
-./add-skill anondevv69/bankr-community bankr-space-worker --force
+./add-skill anondevv69/bankr-space bankr-space-worker --force
 ```
 
 ## 3. Secrets (Aeon dashboard or `gh secret set`)

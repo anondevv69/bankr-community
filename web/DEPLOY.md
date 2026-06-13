@@ -4,7 +4,7 @@ This is the standalone web version — no Bankr app sandbox required.
 
 ## Prerequisites
 
-1. [GitHub repo](https://github.com/anondevv69/bankr-community) pushed (includes `web/` folder)
+1. [GitHub repo](https://github.com/anondevv69/bankr-space) pushed (includes `web/` folder)
 2. [Vercel account](https://vercel.com)
 3. [WalletConnect Project ID](https://cloud.walletconnect.com) (free)
 4. Vercel KV store (free tier via Upstash)

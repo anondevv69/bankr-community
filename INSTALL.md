@@ -13,7 +13,7 @@ Send **one piece at a time** to Bankr. Wait for each to finish before sending th
 ```text
 Fetch and read this file using http.fetch (NOT curl):
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/bankr-install.json
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/bankr-install.json
 
 Confirm slug is bankr-communities-v2 and list all files to install. Do not write anything yet.
 ```
@@ -29,7 +29,7 @@ Create a NEW Bankr app (do not update bankr-communities):
 - visibility: public
 
 Write ONLY manifest.json using http.fetch from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/manifest.json
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/manifest.json
 
 Do not modify content. Confirm version is "11" and slug is "bankr-communities-v2".
 ```
@@ -41,7 +41,7 @@ Do not modify content. Confirm version is "11" and slug is "bankr-communities-v2
 ```text
 For app bankr-communities-v2, write ONLY index.html using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/index.html
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/index.html
 
 Do not modify, merge, or redesign the UI. Confirm footer contains "rayblanco.eth · v11".
 ```
@@ -53,7 +53,7 @@ Do not modify, merge, or redesign the UI. Confirm footer contains "rayblanco.eth
 ```text
 For app bankr-communities-v2, write ONLY scripts/syncTokens.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/syncTokens.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/syncTokens.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -65,7 +65,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/searchTokens.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/searchTokens.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/searchTokens.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -77,7 +77,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/lookupLaunch.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/lookupLaunch.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/lookupLaunch.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -89,7 +89,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/resolveUserProfiles.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/resolveUserProfiles.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/resolveUserProfiles.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -101,7 +101,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/verifyHolder.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/verifyHolder.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/verifyHolder.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -113,7 +113,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/createPost.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/createPost.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/createPost.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -125,7 +125,7 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write ONLY scripts/createCommunity.ts using http.fetch from:
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/createCommunity.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/createCommunity.ts
 
 Do not modify content. Confirm file was written.
 ```
@@ -137,9 +137,9 @@ Do not modify content. Confirm file was written.
 ```text
 For app bankr-communities-v2, write these 2 scripts using http.fetch (do not modify content):
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/verifyCommunity.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/verifyCommunity.ts
 
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/addReaction.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/addReaction.ts
 
 Confirm both files were written.
 ```

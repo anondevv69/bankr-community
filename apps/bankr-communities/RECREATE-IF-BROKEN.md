@@ -27,16 +27,16 @@ Create a NEW public Bankr app slug bankr-communities-v2 titled "Bankr Space".
 Write these files in order from GitHub raw (do not modify):
 
 1. manifest.json
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/manifest.json
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/manifest.json
 
 2. scripts/apiGet.ts
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/apiGet.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/apiGet.ts
 
 3. scripts/apiWrite.ts
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/scripts/apiWrite.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/scripts/apiWrite.ts
 
 4. index.html
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/index.html
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/index.html
 
 Confirm:
 - manifest version "15"
@@ -65,7 +65,7 @@ Only if you **must** keep the old slug:
 Create NEW app slug bankr-communities titled "Bankr Space" (replace deleted broken app).
 
 Files from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities/
 
 Order: manifest.json → scripts/apiGet.ts → scripts/apiWrite.ts → index.html
 Version 15, scripts only apiGet+apiWrite, schedule [].
@@ -79,7 +79,7 @@ These should return HTTP 200:
 
 ```bash
 curl -sL -o /dev/null -w "%{http_code}\n" \
-  "https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities-v2/manifest.json"
+  "https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities-v2/manifest.json"
 ```
 
 Expected: `200`

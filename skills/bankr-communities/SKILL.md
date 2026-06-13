@@ -116,7 +116,7 @@ All `{SITE}` references below = `https://bankr.space`.
 **Install:**
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 **Site API base:** `https://bankr.space` (override via `COMMUNITIES_SITE_URL` env if needed).  
@@ -256,7 +256,7 @@ https://bankr.space/community/0x935e13a28849095db45e63040f109c34b757aba3
 ```text
 install TMP site agent at https://github.com/anondevv69/bankr-tmp-skill/tree/main/tmp-site-agent
 install TMP skills at https://github.com/anondevv69/bankr-tmp-skill
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 TMP marketplace ops → TMP skills. Space social layer → **this skill**.

@@ -48,7 +48,7 @@ Agent posts updates on space + 0xJobs tab (source: agent, viaAgent: true)
 **Install:**
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 install the qrcoin skill from https://github.com/BankrBot/skills/tree/main/qrcoin
 ```
 
@@ -109,7 +109,7 @@ x-wallet-address: {agent or fee recipient}
 **Install:**
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 install the 0xwork skill from https://github.com/BankrBot/skills/tree/main/0xwork
 ```
 

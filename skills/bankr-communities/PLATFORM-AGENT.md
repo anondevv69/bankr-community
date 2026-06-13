@@ -100,7 +100,7 @@ When raised ≥ goal:
 
 ## Platform worker setup (operations)
 
-**Recommended host:** [Aeon](https://github.com/aaronjmars/aeon) — `install-skill-pack anondevv69/bankr-community --path aeon-skill-pack`. See `aeon-skill-pack/README.md`.
+**Recommended host:** [Aeon](https://github.com/aaronjmars/aeon) — `install-skill-pack anondevv69/bankr-space --path aeon-skill-pack`. See `aeon-skill-pack/README.md`.
 
 **Env (bankr.space deployment):**
 

@@ -44,7 +44,7 @@ Full table: **`ONE-LINE-INTENTS.md`**
 ```text
 install TMP site agent at https://github.com/anondevv69/bankr-tmp-skill/tree/main/tmp-site-agent
 install TMP skills at https://github.com/anondevv69/bankr-tmp-skill
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 ```
 
 Set `COMMUNITIES_SITE_URL` on Bankr only if overriding the default `https://bankr.space`.

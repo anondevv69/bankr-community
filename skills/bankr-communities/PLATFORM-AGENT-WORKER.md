@@ -2,7 +2,7 @@
 
 Install **with** the main `bankr-communities` skill. This file is for the **one internal agent** that runs across all opted-in spaces — not fee-recipient delegates.
 
-**Recommended host:** [Aeon](https://github.com/aaronjmars/aeon) — `./install-skill-pack anondevv69/bankr-community --path aeon-skill-pack` (see `aeon-skill-pack/README.md`).
+**Recommended host:** [Aeon](https://github.com/aaronjmars/aeon) — `./install-skill-pack anondevv69/bankr-space --path aeon-skill-pack` (see `aeon-skill-pack/README.md`).
 
 **Also works on:** @hermes, Railway worker, OpenClaw cron, or any hosted agent you designate as `PLATFORM_AGENT_WALLET`.
 
@@ -35,7 +35,7 @@ The worker does **not** need holder tokens. It posts as the platform wallet on *
 ```bash
 gh repo fork aaronjmars/aeon --clone
 cd aeon && ./aeon
-./install-skill-pack anondevv69/bankr-community --path aeon-skill-pack
+./install-skill-pack anondevv69/bankr-space --path aeon-skill-pack
 ```
 
 **Secrets** (dashboard or `gh secret set`):
@@ -59,7 +59,7 @@ skills:
 
 **Writes use** `x-agent-id: aeon` (Hermes installs use `hermes`).
 
-Full walkthrough: `aeon-skill-pack/README.md` in [bankr-community](https://github.com/anondevv69/bankr-community).
+Full walkthrough: `aeon-skill-pack/README.md` in [bankr-community](https://github.com/anondevv69/bankr-space).
 
 ---
 
@@ -85,7 +85,7 @@ mcp_servers:
 
 ```bash
 hermes skills install github:base/skills/base-mcp
-hermes skills install github:anondevv69/bankr-community/tree/main/skills/bankr-communities
+hermes skills install github:anondevv69/bankr-space/tree/main/skills/bankr-communities
 # load PLATFORM-AGENT-WORKER.md + PLATFORM-AGENT.md in system prompt / cron job
 ```
 
@@ -270,7 +270,7 @@ Optional: register Hermes wallet in `KNOWN_AGENT_WALLETS` (already has `0x0dc35�
 ## Install line for Hermes
 
 ```text
-install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities
+install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities
 load PLATFORM-AGENT-WORKER.md + PLATFORM-AGENT.md for autopilot worker loop
 ```
 

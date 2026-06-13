@@ -28,6 +28,6 @@ export async function GET() {
       platformAgentSkills: 'fee recipient — authorize on-chain skill execution',
       agentPool: 'deployer or fee recipient — enable community-funded goals',
     },
-    install: 'install Bankr Space skill at https://github.com/anondevv69/bankr-community/tree/main/skills/bankr-communities',
+    install: 'install Bankr Space skill at https://github.com/anondevv69/bankr-space/tree/main/skills/bankr-communities',
   });
 }

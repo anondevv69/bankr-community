@@ -4,7 +4,7 @@
 
 > **Stuck on "dry run app script"?** Skip dry-run during install. Install files only, open the app, test manually.
 
-**Raw base:** `https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities`
+**Raw base:** `https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities`
 
 ---
 
@@ -24,7 +24,7 @@
 Create a NEW public Bankr app slug bankr-communities titled "Bankr Space".
 
 Write ONLY manifest.json from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/manifest.json
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities/manifest.json
 
 Confirm source release "17" in manifest, scripts ONLY ["apiGet","apiWrite"], schedule [].
 Do NOT write index.html yet. Do NOT run dry-run yet.
@@ -39,10 +39,10 @@ Stop after manifest is written.
 For app bankr-communities, write ONLY these two files:
 
 scripts/apiGet.ts from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/scripts/apiGet.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities/scripts/apiGet.ts
 
 scripts/apiWrite.ts from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/scripts/apiWrite.ts
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities/scripts/apiWrite.ts
 
 Stop. Do not run dry-run yet.
 ```
@@ -53,7 +53,7 @@ Stop. Do not run dry-run yet.
 
 ```text
 For app bankr-communities, write ONLY index.html from:
-https://raw.githubusercontent.com/anondevv69/bankr-community/main/apps/bankr-communities/index.html
+https://raw.githubusercontent.com/anondevv69/bankr-space/main/apps/bankr-communities/index.html
 
 Footer must contain "Bankr Space · v17".
 Make the app public.
